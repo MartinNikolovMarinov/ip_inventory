@@ -3,6 +3,8 @@ project(system_programming VERSION 0.0.1)
 
 set(ip_inventory_target ip_inventory)
 
+enable_testing()
+
 # Download and update git submodules:
 
 find_package(Git QUIET)
@@ -102,3 +104,30 @@ ip_inventory_target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 target_link_libraries(ip_inventory PRIVATE Drogon::Drogon)
 
 # ---------------------------------------- End Create Executables ------------------------------------------------------
+
+# ---------------------------------------- Begin Tests ----------------------------------------------------------------
+
+add_library(unity STATIC tests/unity/unity.c)
+target_include_directories(unity PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unity
+)
+
+function(ip_inventory_add_unity_test test_name test_source)
+    add_executable(${test_name} ${test_source})
+    target_include_directories(${test_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(${test_name} PRIVATE unity)
+    ip_inventory_target_set_default_c_flags(${test_name} ${IP_INVENTORY_DEBUG})
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${test_name} PRIVATE
+            -Wno-old-style-cast
+            -Wno-pragmas
+        )
+    endif()
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endfunction()
+
+ip_inventory_add_unity_test(ip_inventory_test_types tests/test_types.cpp)
+ip_inventory_add_unity_test(ip_inventory_test_constants tests/test_constants.cpp)
+
+# ---------------------------------------- End Tests ------------------------------------------------------------------
