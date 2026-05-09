@@ -60,6 +60,6 @@ i32 main() {
     std::cout << "IP Inventory API listening on http://0.0.0.0:8080\n";
     std::cout << "Swagger UI available at http://localhost:8080/docs/\n";
 
-    app.run();
+    // app.run();
     return 0;
 }

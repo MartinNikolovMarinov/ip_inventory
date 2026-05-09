@@ -27,6 +27,42 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generates compile_commands.json
 
+# Include cmake modules from git submodules:
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(DetectOS)
+include(CompilerOptions)
+include(Logger)
+
+init_logger("[IP_INVENTORY]")
+
+# ---------------------------------------- Begin Options ---------------------------------------------------------------
+
+# Print Selected Options:
+
+if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(IP_INVENTORY_DEBUG OFF)
+else()
+    set(IP_INVENTORY_DEBUG ON)
+endif()
+
+option(IP_INVENTORY_ASSERT_ENABLED "Asserts enabled." OFF)
+
+log_info("---------------------------------------------")
+log_info("Version:                   ${PROJECT_VERSION}")
+log_info("Platform:                  ${OS}")
+log_info("Arch:                      ${CMAKE_SYSTEM_PROCESSOR}")
+log_info("C++ Version:               ${CMAKE_CXX_STANDARD}")
+log_info("Compiler:                  ${CMAKE_CXX_COMPILER_ID}")
+log_info("Compiler Version:          ${CMAKE_CXX_COMPILER_VERSION}")
+log_info("Debug:                     ${IP_INVENTORY_DEBUG}")
+log_info("Assert Enabled:            ${IP_INVENTORY_ASSERT_ENABLED}")
+
+# ---------------------------------------- End Options -----------------------------------------------------------------
+
+# ---------------------------------------- Begin Build Dependencies ----------------------------------------------------
+
 set(BUILD_CTL OFF CACHE BOOL "Build drogon_ctl" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "Build Drogon examples" FORCE)
 set(BUILD_ORM OFF CACHE BOOL "Build Drogon ORM" FORCE)
@@ -35,33 +71,11 @@ set(BUILD_YAML_CONFIG OFF CACHE BOOL "Build Drogon YAML config support" FORCE)
 
 add_subdirectory(vendor/drogon)
 
-# Include cmake modules from git submodules:
+if (TARGET drogon AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(drogon PRIVATE -Wno-deprecated-declarations)
+endif()
 
-# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-# include(DetectOS)
-# include(CompilerOptions)
-# include(Logger)
-
-# init_logger("[SYSTEM_PROGRAMMING]")
-
-# ---------------------------------------- Begin Options ---------------------------------------------------------------
-
-# Print Selected Options:
-
-# option(USE_ANSI_LOGGING "Use ANSI logging." OFF)
-
-# log_info("---------------------------------------------")
-# log_info("Version:                   ${PROJECT_VERSION}")
-# log_info("Platform:                  ${OS}")
-# log_info("Arch:                      ${CMAKE_SYSTEM_PROCESSOR}")
-# log_info("C++ Version:               ${CMAKE_CXX_STANDARD}")
-# log_info("Compiler:                  ${CMAKE_CXX_COMPILER_ID}")
-# log_info("Compiler Version:          ${CMAKE_CXX_COMPILER_VERSION}")
-# log_info("Debug:                     ${SP_DEBUG}")
-# log_info("Use Ansi Logging:          ${USE_ANSI_LOGGING}")
-
-# ---------------------------------------- End Options -----------------------------------------------------------------
+# ---------------------------------------- End Build Dependencies ------------------------------------------------------
 
 # ---------------------------------------- Begin Declare Source Files --------------------------------------------------
 
@@ -82,6 +96,8 @@ target_include_directories(ip_inventory PRIVATE
 target_compile_definitions(ip_inventory PRIVATE
     IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
+
+ip_inventory_target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 
 target_link_libraries(ip_inventory PRIVATE Drogon::Drogon)
 
