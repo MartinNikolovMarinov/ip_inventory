@@ -1,0 +1,33 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "release",
+            "displayName": "Debug configuration",
+            "description": "Debug configuration",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+
+                "USE_ANSI_LOGGING": "ON",
+
+                "CORE_ASSERT_ENABLED": "ON",
+                "CORE_LIBRARY_SHARED": "OFF"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Fastest possible configuration.",
+            "description": "Fastest possible configuration.",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+
+                "USE_ANSI_LOGGING": "ON",
+
+                "CORE_ASSERT_ENABLED": "ON",
+                "CORE_LIBRARY_SHARED": "OFF"
+            }
+        }
+    ]
+}
