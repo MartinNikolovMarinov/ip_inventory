@@ -1,10 +1,11 @@
 #include "types.h"
 
-#include "inventory/repository_in_memory.h"
-#include "inventory/service.h"
+#include <drogon/orm/DbClient.h>
 
+#include <cstdlib>
 #include <iostream>
-#include <vector>
+#include <stdexcept>
+#include <string>
 
 using namespace ip_inv;
 
@@ -64,21 +65,46 @@ using namespace ip_inv;
 // }
 
 i32 main() {
-    IpInventoryInMemory repository;
-    InventoryService service(repository);
+    // const char* connectionString = std::getenv("IP_INVENTORY_DB");
+    // if (connectionString == nullptr || connectionString[0] == '\0') {
+    //     std::cerr << "IP_INVENTORY_DB is not set\n";
+    //     return 1;
+    // }
 
-    const std::vector<IpAddress> addresses = {
-        {"95.44.73.19", IpType::IPv4},
-        {"2a01:05a9:01a4:095c:0000:0000:0000:0001", IpType::IPv6},
-        {"95.44.73.18", IpType::IPv4},
-    };
+    // IP_INVENTORY_DB="host=127.0.0.1 port=5432 dbname=ip_inventory user=postgres password=postgres"
 
-    const AddToPoolResult result = service.addIpAddresses(addresses);
-    if (!result.success()) {
-        std::cout << result.status.detail << '\n';
+    const char* connectionString = "host=127.0.0.1 port=5432 dbname=ip_inventory user=postgres password=postgres";
+
+    try {
+        auto db = drogon::orm::DbClient::newPgClient(connectionString, 1);
+
+        const std::string ip = "203.0.113.10";
+        const std::string ipType = "IPv4";
+
+        db->execSqlSync(
+            "insert into ip_pool (ip, ip_type) values (?, ?) "
+            "on conflict (ip) do nothing",
+            ip,
+            ipType);
+
+        const auto selected = db->execSqlSync(
+            "select ip, ip_type, state from ip_pool where ip = ?",
+            ip);
+
+        for (const auto& row : selected) {
+            std::cout << "Selected IP: "
+                      << row["ip"].as<std::string>() << " "
+                      << row["ip_type"].as<std::string>() << " "
+                      << row["state"].as<std::string>() << '\n';
+        }
+
+        db->execSqlSync("delete from ip_pool where ip = ?", ip);
+        std::cout << "Deleted demo IP: " << ip << '\n';
+
+        return 0;
+    }
+    catch (const std::exception& error) {
+        std::cerr << "Database demo failed: " << error.what() << '\n';
         return 1;
     }
-
-    std::cout << "Added initial IP addresses to inventory pool\n";
-    return 0;
 }
