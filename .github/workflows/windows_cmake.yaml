@@ -5,6 +5,10 @@ on: [ workflow_dispatch ] # Trigger manually only
 env:
   CMAKE_VERSION: 4.1.2
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     name: ${{ matrix.config.name }} - ${{ matrix.config.cmake_preset }}
