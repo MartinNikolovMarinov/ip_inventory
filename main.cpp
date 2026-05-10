@@ -1,10 +1,10 @@
 #include "types.h"
 
-// #include <drogon/drogon.h>
+#include "inventory/repository_in_memory.h"
+#include "inventory/service.h"
 
-#include <filesystem>
 #include <iostream>
-#include <string>
+#include <vector>
 
 using namespace ip_inv;
 
@@ -23,7 +23,7 @@ using namespace ip_inv;
 
 // } // namespace
 
-i32 main() {
+// i32 main() {
 //     auto &app = drogon::app();
 
 //     app.registerHandler(
@@ -57,9 +57,28 @@ i32 main() {
 //         .addListener("0.0.0.0", 8080)
 //         .addALocation("/swagger-ui-assets", "", source_path("vendor/swagger-ui/dist"));
 
-    std::cout << "IP Inventory API listening on http://0.0.0.0:8080\n";
-    std::cout << "Swagger UI available at http://localhost:8080/docs/\n";
-
+//     std::cout << "IP Inventory API listening on http://0.0.0.0:8080\n";
+//     std::cout << "Swagger UI available at http://localhost:8080/docs/\n";
 //     // app.run();
+//     return 0;
+// }
+
+i32 main() {
+    IpInventoryInMemory repository;
+    InventoryService service(repository);
+
+    const std::vector<IpAddress> addresses = {
+        {"95.44.73.19", IpType::IPv4},
+        {"2a01:05a9:01a4:095c:0000:0000:0000:0001", IpType::IPv6},
+        {"95.44.73.18", IpType::IPv4},
+    };
+
+    const AddToPoolResult result = service.addIpAddresses(addresses);
+    if (!result.success()) {
+        std::cout << result.status.detail << '\n';
+        return 1;
+    }
+
+    std::cout << "Added initial IP addresses to inventory pool\n";
     return 0;
 }

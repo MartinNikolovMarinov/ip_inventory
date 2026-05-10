@@ -85,6 +85,11 @@ set_property(TARGET trantor PROPERTY SYSTEM ON)
 
 set(ip_inventory_src
     main.cpp
+
+    src/inventory/types.cpp
+    src/inventory/validation.cpp
+    src/inventory/service.cpp
+    src/inventory/repository_in_memory.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
