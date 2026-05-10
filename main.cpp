@@ -1,5 +1,6 @@
 #include "types.h"
 
+#include <httplib.h>
 #include <sqlite3.h>
 
 #include <iostream>
@@ -17,10 +18,26 @@ static void throw_on_sqlite_error(
     }
 }
 
+static void verify_http_server_integration() {
+    httplib::Server server;
+    server.Get("/health", [](const httplib::Request&, httplib::Response& response) {
+        response.set_content("ok", "text/plain");
+    });
+
+    const int port = server.bind_to_any_port("127.0.0.1");
+    if (port <= 0) {
+        throw std::runtime_error("bind httplib server");
+    }
+    server.stop();
+    std::cout << "Valid http server" << '\n';
+}
+
 i32 main() {
     sqlite3* db = nullptr;
 
     try {
+        verify_http_server_integration();
+
         throw_on_sqlite_error(
             sqlite3_open("ip_inventory_demo.sqlite3", &db),
             db,

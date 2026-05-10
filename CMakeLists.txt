@@ -59,10 +59,22 @@ set(BUILD_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(USE_SUBMODULE ON CACHE BOOL "" FORCE)
 
+# set(HTTPLIB_USE_OPENSSL_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_USE_WOLFSSL_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_USE_MBEDTLS_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_USE_ZLIB_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_USE_BROTLI_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_USE_ZSTD_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_COMPILE OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_INSTALL OFF CACHE BOOL "" FORCE)
+# set(HTTPLIB_TEST OFF CACHE BOOL "" FORCE)
+
 add_subdirectory(vendor/sqlite)
+add_subdirectory(vendor/cpp-httplib)
 
 # Mark the produced libraries as system libraries to silence build warnings for them.
 set_property(TARGET sqlite3 PROPERTY SYSTEM ON)
+set_property(TARGET httplib PROPERTY SYSTEM ON)
 
 # ---------------------------------------- End Build Dependencies ------------------------------------------------------
 
@@ -91,7 +103,7 @@ target_compile_definitions(ip_inventory PRIVATE
 
 target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 
-target_link_libraries(ip_inventory PRIVATE sqlite3)
+target_link_libraries(ip_inventory PRIVATE sqlite3 httplib::httplib)
 
 # ---------------------------------------- End Create Executables ------------------------------------------------------
 
