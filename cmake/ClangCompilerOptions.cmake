@@ -21,7 +21,7 @@ function(target_set_default_c_flags target is_debug)
         -Wold-style-cast                          # Warn on usage of old-style C casts
         -Wdouble-promotion                        # Warn when float values are implicitly promoted to double
         -Wswitch-enum                             # Warn when switch statements do not handle all enum values
-        -Wimplicit-fallthrough=5                  # Require explicit annotation for switch fallthroughs
+        -Wimplicit-fallthrough                    # Require explicit annotation for switch fallthroughs
         -Wduplicate-enum                          # Warn about duplicate values in enum declarations
         -Wundef                                   # Warn if an undefined macro is evaluated in #if expressions
         -Wcast-align                              # Warn about casts that increase required memory alignment
@@ -33,9 +33,6 @@ function(target_set_default_c_flags target is_debug)
         -Wsuggest-override                        # Warn when override could be used but is missing
         -Winconsistent-missing-override           # Warn when some overriding methods use override but others do not
         -Wformat=2                                # Enable stricter printf/scanf format checking
-        -Wduplicated-cond                         # Warn about duplicated conditions in if/else chains
-        -Wduplicated-branches                     # Warn when both branches of a conditional are identical
-        -Wlogical-op                              # Warn about suspicious logical operations
         -Wzero-as-null-pointer-constant           # Warn when literal 0 is used instead of nullptr
         -Wmissing-declarations                    # Warn about global functions without prior declarations
         -Wredundant-decls                         # Warn about redundant repeated declarations
