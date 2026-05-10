@@ -1,5 +1,7 @@
 # IP Inventory
 
+[![CMake Build Matrix](https://github.com/MartinNikolovMarinov/ip_inventory/actions/workflows/build_cmake.yml/badge.svg)](https://github.com/MartinNikolovMarinov/ip_inventory/actions/workflows/build_cmake.yml)
+
 ## Build
 
 List available presets:
