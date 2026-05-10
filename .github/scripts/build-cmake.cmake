@@ -1,3 +1,6 @@
+include("${CMAKE_CURRENT_LIST_DIR}/load-environment-script.cmake")
+load_environment_script()
+
 set(build_args "")
 
 if(DEFINED cmake_build_config AND NOT cmake_build_config STREQUAL "")

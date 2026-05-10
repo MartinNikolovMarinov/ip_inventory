@@ -1,0 +1,83 @@
+name: CMake Windows Build Matrix
+
+on: [ workflow_dispatch ] # Trigger manually only
+
+env:
+  CMAKE_VERSION: 4.1.2
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }} - ${{ matrix.config.cmake_preset }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+              name: "Windows with MSVC Debug static",
+              os: windows-latest,
+              cc: "cl", cxx: "cl",
+              environment_script: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
+              cmake_preset: "msvc-debug",
+              cmake_config: "",
+              cmake_build_config: "--config Debug",
+              ctest_config: "-C Debug",
+            }
+          - {
+              name: "Windows with MSVC Release static",
+              os: windows-latest,
+              cc: "cl", cxx: "cl",
+              environment_script: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
+              cmake_preset: "msvc-release",
+              cmake_config: "",
+              cmake_build_config: "--config Release",
+              ctest_config: "-C Release",
+            }
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Download and update cmake to specified version
+      id: install-cmake
+      run: |
+        cmake \
+          -Dcmake_version="${{ env.CMAKE_VERSION }}" \
+          -Drunner_os="${{ runner.os }}" \
+          -P .github/scripts/install-cmake.cmake
+
+    - name: Verion of cmake
+      run: cmake --version
+
+    - name: Create Build Directory
+      run: mkdir -p ${{ github.workspace }}/build
+
+    - name: List cmake presets
+      run: cmake --list-presets
+
+    - name: Run cmake
+      run: |
+        cmake \
+          -Dcc="${{ matrix.config.cc }}" \
+          -Dcxx="${{ matrix.config.cxx }}" \
+          -Dcmake_preset="${{ matrix.config.cmake_preset }}" \
+          -Dcmake_config="${{ matrix.config.cmake_config }}" \
+          -Denvironment_script="${{ matrix.config.environment_script }}" \
+          -Drunner_os="${{ runner.os }}" \
+          -P .github/scripts/configure-cmake.cmake
+
+    - name: Build
+      run: |
+        cmake \
+          -Dcmake_build_config="${{ matrix.config.cmake_build_config }}" \
+          -Denvironment_script="${{ matrix.config.environment_script }}" \
+          -Drunner_os="${{ runner.os }}" \
+          -P .github/scripts/build-cmake.cmake
+
+    - name: Run tests
+      run: |
+        cmake \
+          -Dctest_config="${{ matrix.config.ctest_config }}" \
+          -Denvironment_script="${{ matrix.config.environment_script }}" \
+          -Drunner_os="${{ runner.os }}" \
+          -P .github/scripts/test-cmake.cmake

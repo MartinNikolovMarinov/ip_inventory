@@ -19,8 +19,8 @@ message(STATUS "Installing CMake version: ${cmake_version}")
 
 # Match GitHub Actions runner names to Kitware's release archive naming.
 if(runner_os STREQUAL "Windows")
-    set(cmake_suffix "win64-x64.zip")
-    set(cmake_dir "cmake-${cmake_version}-win64-x64/bin")
+    set(cmake_suffix "windows-x86_64.zip")
+    set(cmake_dir "cmake-${cmake_version}-windows-x86_64/bin")
 elseif(runner_os STREQUAL "Linux")
     set(cmake_suffix "Linux-x86_64.tar.gz")
     set(cmake_dir "cmake-${cmake_version}-linux-x86_64/bin")
