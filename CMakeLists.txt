@@ -3,36 +3,18 @@ project(system_programming VERSION 0.0.1)
 
 set(ip_inventory_target ip_inventory)
 
-enable_testing()
-
-# Download and update git submodules:
-
-find_package(Git QUIET)
-if (GIT_FOUND)
-    message(STATUS "Submodule update")
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        RESULT_VARIABLE GIT_SUBMOD_RESULT
-    )
-    if (NOT GIT_SUBMOD_RESULT EQUAL "0")
-        message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
-    endif()
-else()
-    message(WARNING "Git is not found. It is required to update submodules.")
-endif()
-
 # Standard Requirements:
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_EXTENSIONS OFF) # make sure no gnu/clang specific language extensions are used
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generates compile_commands.json
 
 # Include cmake modules from git submodules:
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+include(UpdateGitSubmodules)
 include(DetectOS)
 include(CompilerOptions)
 include(Logger)
@@ -99,7 +81,7 @@ target_compile_definitions(ip_inventory PRIVATE
     IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
-ip_inventory_target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
+target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 
 target_link_libraries(ip_inventory PRIVATE Drogon::Drogon)
 
@@ -107,17 +89,19 @@ target_link_libraries(ip_inventory PRIVATE Drogon::Drogon)
 
 # ---------------------------------------- Begin Tests ----------------------------------------------------------------
 
+enable_testing()
+
 add_library(unity STATIC tests/unity/unity.c)
 target_include_directories(unity PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/unity
 )
 
-function(ip_inventory_add_unity_test test_name test_source)
+function(add_unity_test test_name test_source)
     add_executable(${test_name} ${test_source})
     target_include_directories(${test_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_link_libraries(${test_name} PRIVATE unity)
-    ip_inventory_target_set_default_c_flags(${test_name} ${IP_INVENTORY_DEBUG})
+    target_set_default_c_flags(${test_name} ${IP_INVENTORY_DEBUG})
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(${test_name} PRIVATE
             -Wno-old-style-cast
@@ -127,7 +111,7 @@ function(ip_inventory_add_unity_test test_name test_source)
     add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
-ip_inventory_add_unity_test(ip_inventory_test_types tests/test_types.cpp)
-ip_inventory_add_unity_test(ip_inventory_test_constants tests/test_constants.cpp)
+add_unity_test(ip_inventory_test_types tests/test_types.cpp)
+add_unity_test(ip_inventory_test_constants tests/test_constants.cpp)
 
 # ---------------------------------------- End Tests ------------------------------------------------------------------
