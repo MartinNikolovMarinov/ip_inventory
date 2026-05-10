@@ -130,13 +130,15 @@ function(add_unity_test test_name test_source)
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
-    target_link_libraries(${test_name} PRIVATE unity)
+    target_compile_definitions(${test_name} PRIVATE
+        IP_INVENTORY_TEST_DATA_ROOT="${CMAKE_BINARY_DIR}/test_data"
+    )
+    target_link_libraries(${test_name} PRIVATE unity ${ARGN})
     target_set_default_c_flags(${test_name} ${IP_INVENTORY_DEBUG})
     add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
-add_unity_test(ip_inventory_test_types tests/test_types.cpp)
-add_unity_test(ip_inventory_test_constants tests/test_constants.cpp)
+add_unity_test(ip_inventory_test_sqlite tests/test_sqlite.cpp Drogon::Drogon sqlite3)
 
 endif()
 
