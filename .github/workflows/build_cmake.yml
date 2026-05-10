@@ -2,6 +2,10 @@ name: CMake Build Matrix
 
 on: [ workflow_dispatch ] # Trigger manually only
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     name: ${{ matrix.config.name }} - ${{ matrix.config.cmake_preset }}
