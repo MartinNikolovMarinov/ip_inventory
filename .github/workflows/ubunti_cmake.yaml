@@ -44,7 +44,7 @@ jobs:
 
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Download and update cmake to specified version
       id: install-cmake
@@ -64,93 +64,22 @@ jobs:
       run: cmake --list-presets
 
     - name: Run cmake
-      shell: cmake -P {0}
       run: |
-        set(ENV{CC} ${{ matrix.config.cc }})
-        set(ENV{CXX} ${{ matrix.config.cxx }})
-
-        # Run environment script if specified. Save output to file.
-        if("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
-          execute_process(
-            COMMAND "${{ matrix.config.environment_script }}" && set
-            OUTPUT_FILE environment_script_output.txt
-          )
-          file(STRINGS environment_script_output.txt output_lines)
-          foreach(line IN LISTS output_lines)
-            if(line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
-              set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
-            endif()
-          endforeach()
-        endif()
-
-        # Windows path separator is ";".
-        set(path_separator ":")
-        if("${{ runner.os }}" STREQUAL "Windows")
-          set(path_separator ";")
-        endif()
-        set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
-
-        # Run cmake.
-        execute_process(
-          COMMAND cmake
-            -S .
-            -B build
-            --preset "${{ matrix.config.cmake_preset }}"
-          RESULT_VARIABLE result
-        )
-        if(NOT result EQUAL 0)
-          message(FATAL_ERROR "Bad exit status")
-        endif()
+        cmake \
+          -Dcc="${{ matrix.config.cc }}" \
+          -Dcxx="${{ matrix.config.cxx }}" \
+          -Dcmake_preset="${{ matrix.config.cmake_preset }}" \
+          -Drunner_os="${{ runner.os }}" \
+          -P .github/scripts/configure-cmake.cmake
 
     - name: Build
-      shell: cmake -P {0}
       run: |
-        # Read the output file generated from the envoronment script.
-        if("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
-          file(STRINGS environment_script_output.txt output_lines)
-          foreach(line IN LISTS output_lines)
-            if(line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
-              set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
-            endif()
-          endforeach()
-        endif()
-
-        message("\n\nPassed Configuration: ${{ matrix.config.cmake_build_config }}\n\n")
-
-        # Run build
-        execute_process(
-          COMMAND cmake --build build ${{ matrix.config.cmake_build_config }} --parallel
-          RESULT_VARIABLE result
-          OUTPUT_VARIABLE output
-          ERROR_VARIABLE output
-          ECHO_OUTPUT_VARIABLE ECHO_ERROR_VARIABLE
-        )
-        if(NOT result EQUAL 0)
-          string(REGEX MATCH "FAILED:.*$" error_message "${output}")
-          string(REPLACE "\n" "%0A" error_message "${error_message}")
-          message("::error::${error_message}")
-          message(FATAL_ERROR "Build failed")
-        endif()
+        cmake \
+          -Dcmake_build_config="${{ matrix.config.cmake_build_config }}" \
+          -P .github/scripts/build-cmake.cmake
 
     - name: Run tests
-      shell: cmake -P {0}
       run: |
-        set(ENV{CTEST_OUTPUT_ON_FAILURE} "ON")
-
-        message("\n\nPassed Configuration: ${{ matrix.config.ctest_config }}\n\n")
-
-        # The tests I usually write are not thread safe, but I can add -j ${N} to run tests in parallel.
-        execute_process(
-          COMMAND ctest ${{ matrix.config.ctest_config }} --verbose
-          WORKING_DIRECTORY build
-          RESULT_VARIABLE result
-          OUTPUT_VARIABLE output
-          ERROR_VARIABLE output
-          ECHO_OUTPUT_VARIABLE ECHO_ERROR_VARIABLE
-        )
-        if(NOT result EQUAL 0)
-          string(REGEX MATCH "[0-9]+% tests.*[0-9.]+ sec.*$" test_results "${output}")
-          string(REPLACE "\n" "%0A" test_results "${test_results}")
-          message("::error::${test_results}")
-          message(FATAL_ERROR "Running tests failed!")
-        endif()
+        cmake \
+          -Dctest_config="${{ matrix.config.ctest_config }}" \
+          -P .github/scripts/test-cmake.cmake
