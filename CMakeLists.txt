@@ -59,26 +59,9 @@ set(BUILD_DOC OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(USE_SUBMODULE ON CACHE BOOL "" FORCE)
 
-set(BUILD_ORM ON CACHE BOOL "" FORCE)
-set(BUILD_POSTGRESQL OFF CACHE BOOL "" FORCE)
-set(BUILD_MYSQL OFF CACHE BOOL "" FORCE)
-set(BUILD_SQLITE ON CACHE BOOL "" FORCE)
-set(BUILD_REDIS OFF CACHE BOOL "" FORCE)
-
-set(BUILD_BROTLI OFF CACHE BOOL "" FORCE)
-set(BUILD_YAML_CONFIG OFF CACHE BOOL "" FORCE)
-set(USE_STATIC_LIBS_ONLY OFF CACHE BOOL "" FORCE)
-
 add_subdirectory(vendor/sqlite)
-add_subdirectory(vendor/drogon)
-
-if (TARGET drogon AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(drogon PRIVATE -Wno-deprecated-declarations)
-endif()
 
 # Mark the produced libraries as system libraries to silence build warnings for them.
-set_property(TARGET drogon PROPERTY SYSTEM ON)
-set_property(TARGET trantor PROPERTY SYSTEM ON)
 set_property(TARGET sqlite3 PROPERTY SYSTEM ON)
 
 # ---------------------------------------- End Build Dependencies ------------------------------------------------------
@@ -108,7 +91,7 @@ target_compile_definitions(ip_inventory PRIVATE
 
 target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 
-target_link_libraries(ip_inventory PRIVATE Drogon::Drogon sqlite3)
+target_link_libraries(ip_inventory PRIVATE sqlite3)
 
 # ---------------------------------------- End Create Executables ------------------------------------------------------
 
@@ -138,7 +121,7 @@ function(add_unity_test test_name test_source)
     add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
-add_unity_test(ip_inventory_test_sqlite tests/test_sqlite.cpp Drogon::Drogon sqlite3)
+add_unity_test(ip_inventory_test_sqlite tests/test_sqlite.cpp sqlite3)
 
 endif()
 
