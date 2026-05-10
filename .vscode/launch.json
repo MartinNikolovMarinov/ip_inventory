@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Executable with LLDB",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/ip_inventory",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "sourceMap": {
+                "./build": "${workspaceFolder}",
+            },
+            "stopOnEntry": false,
+            "env": {},
+            "preLaunchTask": "Build with Makefile",
+        }
+    ]
+}
