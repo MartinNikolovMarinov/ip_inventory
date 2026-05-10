@@ -1,4 +1,4 @@
-name: CMake Ubuntu Build Matrix
+name: CMake MacOS Build Matrix
 
 on: [ workflow_dispatch ] # Trigger manually only
 
