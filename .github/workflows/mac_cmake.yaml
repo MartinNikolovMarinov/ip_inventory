@@ -1,4 +1,4 @@
-name: CMake Build Matrix
+name: CMake Ubuntu Build Matrix
 
 on: [ workflow_dispatch ] # Trigger manually only
 
@@ -13,34 +13,6 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {
-              name: "Ubuntu with GCC Debug",
-              os: ubuntu-latest,
-              cc: "gcc",
-              cxx: "g++",
-              cmake_preset: "gcc-debug"
-            }
-          - {
-              name: "Ubuntu with GCC Release",
-              os: ubuntu-latest,
-              cc: "gcc",
-              cxx: "g++",
-              cmake_preset: "gcc-release"
-            }
-          - {
-              name: "Ubuntu with Clang Debug",
-              os: ubuntu-latest,
-              cc: "clang",
-              cxx: "clang++",
-              cmake_preset: "clang-debug"
-            }
-          - {
-              name: "Ubuntu with Clang Release",
-              os: ubuntu-latest,
-              cc: "clang",
-              cxx: "clang++",
-              cmake_preset: "clang-release"
-            }
           - {
               name: "MacOS with Clang Debug",
               os: macos-latest,
@@ -66,7 +38,7 @@ jobs:
           -Drunner_os="${{ runner.os }}" \
           -P .github/scripts/install-cmake.cmake
 
-    - name: Version of cmake
+    - name: Verion of cmake
       run: cmake --version
 
     - name: Create Build Directory
