@@ -1,4 +1,5 @@
 #include "app.h"
+#include "ip_utils.h"
 #include "validation.h"
 
 #include "inventory/sqllite3_repository.h"
@@ -10,6 +11,7 @@
 #include <condition_variable>
 #include <format>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -47,8 +49,10 @@ struct App::Impl {
 namespace {
 
 void configureHttpRoutes(App::Impl& app) {
-    app.server.Get("/health", [](const httplib::Request&, httplib::Response& response) {
+    app.server.Get("/health", [&app](const httplib::Request&, httplib::Response& response) {
+        std::cout << "Called /health endpoint" << std::endl;
         response.set_content(R"({"status":"ok"})", "application/json");
+        app.shutdown();
     });
 }
 
@@ -56,7 +60,8 @@ void validateAppConfig(const AppConfig& config) {
     if (!isValidPort(config.port)) {
         throw std::invalid_argument(std::format("invalid port: {}", config.port));
     }
-    if (!isValidIpv4Address(config.ipAddress.data(), config.ipAddress.length())) {
+    IpAddress ipAddress {};
+    if (!parseIpV4(config.ipAddress, ipAddress)) {
         throw std::invalid_argument(std::format("invalid ip address: {}", config.ipAddress));
     }
     if (config.serverThreadCount == 0) {
@@ -77,6 +82,8 @@ App::App(App&&) noexcept = default;
 App& App::operator=(App&&) noexcept = default;
 
 App App::create(AppConfig&& config) {
+    std::cout << "Creating application" << std::endl;
+
     if (config.ipAddress == "localhost") {
         config.ipAddress = "127.0.0.1";
     }
@@ -93,10 +100,15 @@ App App::create(AppConfig&& config) {
     impl->inventoryService = std::make_unique<IpInventoryService>(std::move(inventoryRepository));
 
     App app(std::move(impl));
+    std::cout << "Application created successfully" << std::endl;
     return app;
 }
 
 i32 App::run() {
+    std::cout << "Application start on "
+              << m_impl->cfg.ipAddress << ":" << m_impl->cfg.port
+              << std::endl;
+
     // Start garbage collection thread:
     m_impl->gcThread = std::thread([this] {
         auto gcIntervalSeconds = std::chrono::seconds(m_impl->cfg.gcIntervalSeconds);
@@ -155,6 +167,8 @@ i32 App::run() {
 }
 
 void App::shutdown() {
+    std::cout << "Application shuttingdown" << std::endl;
+
     {
         std::lock_guard lock(m_impl->shutdownMutex);
         if (m_impl->shutdownInProgress) {

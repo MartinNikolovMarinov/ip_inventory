@@ -1,6 +1,6 @@
 #pragma once
 
-#include "inventory/types.h"
+#include "inventory/inventory_types.h"
 
 #include <vector>
 

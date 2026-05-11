@@ -1,4 +1,4 @@
-#include "inventory/types.h"
+#include "inventory/inventory_types.h"
 
 namespace ip_inv {
 

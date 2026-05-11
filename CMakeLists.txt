@@ -70,6 +70,7 @@ set(ip_inventory_src
     main.cpp
 
     src/app.cpp
+    src/ip_utils.cpp
     src/validation.cpp
 
     src/inventory/types.cpp
@@ -124,6 +125,8 @@ endfunction()
 add_unity_test(ip_inventory_test_sqlite tests/test_sqlite.cpp sqlite3)
 add_unity_test(ip_inventory_test_validation tests/test_validation.cpp)
 target_sources(ip_inventory_test_validation PRIVATE src/validation.cpp)
+add_unity_test(ip_inventory_test_ip_utils tests/test_ip_utils.cpp)
+target_sources(ip_inventory_test_ip_utils PRIVATE src/ip_utils.cpp)
 
 endif()
 

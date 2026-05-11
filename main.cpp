@@ -1,6 +1,7 @@
 #include "app.h"
 
 #include <thread>
+#include <iostream>
 
 using namespace ip_inv;
 
@@ -17,5 +18,8 @@ i32 main() {
 
     App app = App::create(std::move(cfg));
     i32 returnCode = app.run();
+
+    std::cout << "Application exit code = " << returnCode << std::endl;
+
     return returnCode;
 }
