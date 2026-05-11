@@ -94,6 +94,11 @@ target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 
 target_link_libraries(ip_inventory PRIVATE sqlite3 httplib::httplib)
 
+if(OS STREQUAL "windows")
+    # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
+    target_link_libraries(ip_inventory PRIVATE ws2_32)
+endif()
+
 # ---------------------------------------- End Create Executables ------------------------------------------------------
 
 # ---------------------------------------- Begin Tests -----------------------------------------------------------------
@@ -111,22 +116,38 @@ set_property(TARGET unity PROPERTY SYSTEM ON)
 
 function(add_unity_test test_name test_source)
     add_executable(${test_name} ${test_source})
+
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
     target_compile_definitions(${test_name} PRIVATE
         IP_INVENTORY_TEST_DATA_ROOT="${CMAKE_BINARY_DIR}/test_data"
     )
+
     target_link_libraries(${test_name} PRIVATE unity ${ARGN})
     target_set_default_c_flags(${test_name} ${IP_INVENTORY_DEBUG})
+
     add_test(NAME ${test_name} COMMAND ${test_name})
+
 endfunction()
 
 add_unity_test(ip_inventory_test_sqlite tests/test_sqlite.cpp sqlite3)
-add_unity_test(ip_inventory_test_validation tests/test_validation.cpp)
-target_sources(ip_inventory_test_validation PRIVATE src/validation.cpp)
-add_unity_test(ip_inventory_test_ip_utils tests/test_ip_utils.cpp)
-target_sources(ip_inventory_test_ip_utils PRIVATE src/ip_utils.cpp)
+
+set(ip_inventory_test_validation_src
+    tests/test_validation.cpp
+    src/validation.cpp
+)
+add_unity_test(ip_inventory_test_validation "${ip_inventory_test_validation_src}")
+
+set(ip_inventory_test_ip_utils_src
+    tests/test_ip_utils.cpp
+    src/ip_utils.cpp
+)
+add_unity_test(ip_inventory_test_ip_utils "${ip_inventory_test_ip_utils_src}")
+if(OS STREQUAL "windows")
+    # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
+    target_link_libraries(ip_inventory_test_ip_utils PRIVATE ws2_32)
+endif()
 
 endif()
 
