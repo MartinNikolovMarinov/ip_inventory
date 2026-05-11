@@ -122,6 +122,8 @@ function(add_unity_test test_name test_source)
 endfunction()
 
 add_unity_test(ip_inventory_test_sqlite tests/test_sqlite.cpp sqlite3)
+add_unity_test(ip_inventory_test_validation tests/test_validation.cpp)
+target_sources(ip_inventory_test_validation PRIVATE src/validation.cpp)
 
 endif()
 
