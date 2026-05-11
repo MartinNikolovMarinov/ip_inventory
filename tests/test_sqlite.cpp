@@ -3,9 +3,12 @@
 
 #include <chrono>
 #include <filesystem>
+#include <format>
 #include <string>
 
 static std::filesystem::path testRunDirectory;
+
+// FIXME: Remove this in favor of a good repository tests
 
 void setUp() {}
 
@@ -35,7 +38,7 @@ static std::filesystem::path test_database_path(
 
 static void assert_sqlite_ok(const int result, sqlite3* db, const char* operation) {
     if (result != SQLITE_OK && result != SQLITE_DONE && result != SQLITE_ROW) {
-        TEST_FAIL_MESSAGE((std::string(operation) + ": " + sqlite3_errmsg(db)).c_str());
+        TEST_FAIL_MESSAGE(std::format("{}: {}", operation, sqlite3_errmsg(db)).c_str());
     }
 }
 

@@ -9,6 +9,7 @@ namespace ip_inv {
 
 struct AppConfig {
     std::string ipAddress;
+    std::string databaseName;
     i32 port;
     usize serverThreadCount = 4;
     usize gcIntervalSeconds = 60;

@@ -60,6 +60,9 @@ void validateAppConfig(const AppConfig& config) {
     if (!isValidPort(config.port)) {
         throw std::invalid_argument(std::format("invalid port: {}", config.port));
     }
+    if (!isValidDatabaseName(config.databaseName)) {
+        throw std::invalid_argument(std::format("invalid database name: {}", config.databaseName));
+    }
     IpAddress ipAddress {};
     if (!parseIpV4(config.ipAddress, ipAddress)) {
         throw std::invalid_argument(std::format("invalid ip address: {}", config.ipAddress));
@@ -96,7 +99,8 @@ App App::create(AppConfig&& config) {
     };
     configureHttpRoutes(*impl);
 
-    auto inventoryRepository = std::make_unique<IpInventoryRepositorySqlLite>();
+    auto inventoryRepository = std::make_unique<IpInventoryRepositorySqlLite>(impl->cfg.databaseName);
+    inventoryRepository->initializeDb();
     impl->inventoryService = std::make_unique<IpInventoryService>(std::move(inventoryRepository));
 
     App app(std::move(impl));

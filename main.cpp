@@ -12,9 +12,10 @@ i32 main() {
 
     AppConfig cfg;
     cfg.ipAddress = "localhost";
+    cfg.databaseName = "ip_inventory.sqlite3";
     cfg.port = 8080;
     cfg.serverThreadCount = concurrency > 0 ? concurrency : 1;
-    cfg.gcIntervalSeconds = 1;
+    cfg.gcIntervalSeconds = 5;
 
     App app = App::create(std::move(cfg));
     i32 returnCode = app.run();

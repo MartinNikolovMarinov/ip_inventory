@@ -34,6 +34,7 @@ endif()
 option(IP_INVENTORY_ASSERT_ENABLED "Asserts enabled." OFF)
 option(IP_INVENTORY_BUILD_TESTS "Build tests." OFF)
 option(IP_INVENTORY_CONFIGURED_FROM_PRESET "Configured from preset." OFF)
+set(IP_INVENTORY_SQLITE3_DB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/db" CACHE PATH "Directory for the SQLite database.")
 
 log_info("---------------------------------------------")
 log_info("Version:                   ${PROJECT_VERSION}")
@@ -46,6 +47,7 @@ log_info("Configured from preset:    ${IP_INVENTORY_CONFIGURED_FROM_PRESET}")
 log_info("Debug:                     ${IP_INVENTORY_DEBUG}")
 log_info("Build Tests:               ${IP_INVENTORY_BUILD_TESTS}")
 log_info("Assert Enabled:            ${IP_INVENTORY_ASSERT_ENABLED}")
+log_info("SQLite3 DB Root:           ${IP_INVENTORY_SQLITE3_DB_ROOT}")
 
 # ---------------------------------------- End Options -----------------------------------------------------------------
 
@@ -88,6 +90,7 @@ target_include_directories(ip_inventory PRIVATE
 )
 target_compile_definitions(ip_inventory PRIVATE
     IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    IP_INVENTORY_SQLITE3_DB_ROOT="${IP_INVENTORY_SQLITE3_DB_ROOT}"
 )
 
 target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
