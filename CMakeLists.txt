@@ -54,6 +54,7 @@ log_info("SQLite3 DB Root:           ${IP_INVENTORY_SQLITE3_DB_ROOT}")
 # ---------------------------------------- Begin Build Dependencies ----------------------------------------------------
 
 add_subdirectory(vendor/sqlite)
+add_subdirectory(vendor/nlohmann)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(HTTPLIB_INSTALL OFF CACHE BOOL "" FORCE)
@@ -95,7 +96,11 @@ target_compile_definitions(ip_inventory PRIVATE
 
 target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 
-target_link_libraries(ip_inventory PRIVATE sqlite3 httplib::httplib)
+target_link_libraries(ip_inventory PRIVATE
+    sqlite3
+    httplib::httplib
+    nlohmann_json::nlohmann_json
+)
 
 if(OS STREQUAL "windows")
     # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.

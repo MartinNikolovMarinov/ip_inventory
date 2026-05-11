@@ -6,6 +6,7 @@
 #include "inventory/service.h"
 
 #include <httplib.h>
+#include <nlohmann/json.hpp>
 
 #include <chrono>
 #include <condition_variable>
@@ -17,6 +18,7 @@
 #include <stdexcept>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace ip_inv {
 
@@ -48,11 +50,99 @@ struct App::Impl {
 
 namespace {
 
+using json = nlohmann::json;
+
+bool parseIpType(const std::string& value, IpType& type) {
+    if (value == "IPv4") {
+        type = IpType::IPv4;
+        return true;
+    }
+    if (value == "IPv6") {
+        type = IpType::IPv6;
+        return true;
+    }
+
+    return false;
+}
+
+json statusResponse(const char* statusCode, const char* statusMessage) {
+    return json {
+        {"statusCode", statusCode},
+        {"statusMessage", statusMessage},
+    };
+}
+
+void setJsonResponse(httplib::Response& response, int status, const json& body) {
+    response.status = status;
+    response.set_content(body.dump(), "application/json");
+}
+
+bool parseAddIpPoolRequest(const httplib::Request& request, std::vector<IpAddress>& addresses, std::string& error) {
+    const json body = json::parse(request.body, nullptr, false);
+    if (body.is_discarded() || !body.is_object()) {
+        error = "Invalid JSON request body";
+        return false;
+    }
+
+    const auto ipAddresses = body.find("ipAddresses");
+    if (ipAddresses == body.end() || !ipAddresses->is_array() || ipAddresses->empty()) {
+        error = "Request field 'ipAddresses' must be a non-empty array";
+        return false;
+    }
+
+    for (const json& item : *ipAddresses) {
+        if (!item.is_object()) {
+            error = "Each ipAddresses entry must be an object";
+            return false;
+        }
+
+        const auto ip = item.find("ip");
+        if (ip == item.end() || !ip->is_string()) {
+            error = "Each ipAddresses entry must contain string field 'ip'";
+            return false;
+        }
+
+        const auto ipType = item.find("ipType");
+        if (ipType == item.end() || !ipType->is_string()) {
+            error = "Each ipAddresses entry must contain string field 'ipType'";
+            return false;
+        }
+
+        IpAddress address {};
+        address.value = ip->get<std::string>();
+        if (!parseIpType(ipType->get<std::string>(), address.type)) {
+            error = std::format("Invalid ipType: {}", ipType->get<std::string>());
+            return false;
+        }
+
+        addresses.push_back(std::move(address));
+    }
+
+    return true;
+}
+
 void configureHttpRoutes(App::Impl& app) {
     app.server.Get("/health", [&app](const httplib::Request&, httplib::Response& response) {
         std::cout << "Called /health endpoint" << std::endl;
         response.set_content(R"({"status":"ok"})", "application/json");
         app.shutdown();
+    });
+
+    app.server.Post("/ip-inventory/ip-pool", [&app](const httplib::Request& request, httplib::Response& response) {
+        std::vector<IpAddress> addresses;
+        std::string error;
+        if (!parseAddIpPoolRequest(request, addresses, error)) {
+            setJsonResponse(response, 400, statusResponse("1", error.c_str()));
+            return;
+        }
+
+        AddToPoolResult result = app.inventoryService->addIpAddresses(addresses);
+        if (!result.success()) {
+            setJsonResponse(response, 400, statusResponse("1", result.status.detail.c_str()));
+            return;
+        }
+
+        setJsonResponse(response, 200, statusResponse("0", "Successful operation. OK"));
     });
 }
 

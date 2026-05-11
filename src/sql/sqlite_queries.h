@@ -16,4 +16,9 @@ create table if not exists ip_pool (
 );
 )sql";
 
+constexpr const char* sqliteInsertIpPoolAddress = R"sql(
+insert or ignore into ip_pool (ip_type, ip_bytes, display_ip)
+values (?, ?, ?);
+)sql";
+
 } // namespace ip_inv

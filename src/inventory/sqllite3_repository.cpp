@@ -83,9 +83,38 @@ void IpInventoryRepositorySqlLite::initializeDb() {
     std::cout << "SQL LITE database intialized successfully" << std::endl;
 }
 
-AddToPoolResult IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<IpAddress>&) {
+AddToPoolResult IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<IpAddress>& addresses) {
     AddToPoolResult ret;
-    // TODO: implement..
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        ret.status.error = InventoryError::InvalidIp;
+        ret.status.detail = "Failed to add ip address; reason: database is not initialized";
+        return ret;
+    }
+
+    sqlite3_stmt* statement = nullptr;
+    assertSqliteOk(sqlite3_prepare_v2(m_db, sqliteInsertIpPoolAddress, -1, &statement, nullptr), m_db, "prepare insert ip_pool");
+
+    for (const IpAddress& address : addresses) {
+        const char* ipType = address.type == IpType::IPv4 ? "IPv4" : "IPv6";
+        const int byteCount = static_cast<int>(IpAddress::byteCount(address.type));
+
+        assertSqliteOk(sqlite3_bind_text(statement, 1, ipType, -1, SQLITE_TRANSIENT), m_db, "bind ip_type");
+        assertSqliteOk(sqlite3_bind_blob(statement, 2, address.bytes, byteCount, SQLITE_TRANSIENT), m_db, "bind ip_bytes");
+        assertSqliteOk(sqlite3_bind_text(statement, 3, address.value.c_str(), -1, SQLITE_TRANSIENT), m_db, "bind display_ip");
+
+        const int stepResult = sqlite3_step(statement);
+        if (stepResult != SQLITE_DONE) {
+            sqlite3_finalize(statement);
+            assertSqliteOk(stepResult, m_db, "insert ip_pool");
+        }
+
+        assertSqliteOk(sqlite3_reset(statement), m_db, "reset insert ip_pool");
+        assertSqliteOk(sqlite3_clear_bindings(statement), m_db, "clear insert ip_pool bindings");
+    }
+
+    assertSqliteOk(sqlite3_finalize(statement), m_db, "finalize insert ip_pool");
     return ret;
 }
 
