@@ -18,15 +18,15 @@ void tearDown() {
 
 static std::string test_run_timestamp() {
     const auto now = std::chrono::system_clock::now();
-    const auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch());
+    const auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
     return std::to_string(millis.count());
 }
 
 static std::filesystem::path test_database_path(
     const std::string& timestamp,
     const std::string& test_name,
-    const std::string& db_name) {
+    const std::string& db_name
+) {
     return std::filesystem::path(IP_INVENTORY_TEST_DATA_ROOT) /
            timestamp /
            test_name /

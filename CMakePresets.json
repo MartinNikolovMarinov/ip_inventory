@@ -33,43 +33,37 @@
 			"name": "clang-debug",
 			"displayName": "Clang debug configuration.",
 			"description": "Debug build configured with the native Clang toolchain.",
-			"inherits": "debug-base",
-			"toolchainFile": "${sourceDir}/cmake/toolchains/clang-native.cmake"
+			"inherits": "debug-base"
 		},
 		{
 			"name": "clang-release",
 			"displayName": "Clang release configuration.",
 			"description": "Release build configured with the native Clang toolchain.",
-			"inherits": "release-base",
-			"toolchainFile": "${sourceDir}/cmake/toolchains/clang-native.cmake"
+			"inherits": "release-base"
 		},
 		{
 			"name": "gcc-debug",
 			"displayName": "Gcc debug configuration.",
 			"description": "Debug build configured with the native gcc toolchain.",
-			"inherits": "debug-base",
-			"toolchainFile": "${sourceDir}/cmake/toolchains/gcc-native.cmake"
+			"inherits": "debug-base"
 		},
 		{
 			"name": "gcc-release",
 			"displayName": "Gcc release configuration.",
 			"description": "Release build configured with the native gcc toolchain.",
-			"inherits": "release-base",
-			"toolchainFile": "${sourceDir}/cmake/toolchains/gcc-native.cmake"
+			"inherits": "release-base"
 		},
 		{
 			"name": "msvc-debug",
 			"displayName": "MSVC debug configuration.",
 			"description": "Debug build configured with the native MSVC toolchain.",
-			"inherits": "debug-base",
-			"toolchainFile": "${sourceDir}/cmake/toolchains/msvc-native.cmake"
+			"inherits": "debug-base"
 		},
 		{
 			"name": "msvc-release",
 			"displayName": "MSVC release configuration.",
 			"description": "Release build configured with the native MSVC toolchain.",
-			"inherits": "release-base",
-			"toolchainFile": "${sourceDir}/cmake/toolchains/msvc-native.cmake"
+			"inherits": "release-base"
 		}
 	]
 }
