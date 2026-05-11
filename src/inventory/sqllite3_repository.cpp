@@ -1,6 +1,6 @@
 #include "inventory/sqllite3_repository.h"
 
-#include "../sql/sqlite_queries.h"
+#include "sql/sqlite_queries.h"
 
 #include <sqlite3.h>
 
