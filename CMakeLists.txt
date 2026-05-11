@@ -51,25 +51,11 @@ log_info("Assert Enabled:            ${IP_INVENTORY_ASSERT_ENABLED}")
 
 # ---------------------------------------- Begin Build Dependencies ----------------------------------------------------
 
-set(BUILD_CTL OFF CACHE BOOL "" FORCE)
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-set(BUILD_DOC OFF CACHE BOOL "" FORCE)
+add_subdirectory(vendor/sqlite)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(USE_SUBMODULE ON CACHE BOOL "" FORCE)
-
-# set(HTTPLIB_USE_OPENSSL_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_USE_WOLFSSL_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_USE_MBEDTLS_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_USE_ZLIB_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_USE_BROTLI_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_USE_ZSTD_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_COMPILE OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_INSTALL OFF CACHE BOOL "" FORCE)
-# set(HTTPLIB_TEST OFF CACHE BOOL "" FORCE)
-
-add_subdirectory(vendor/sqlite)
+set(HTTPLIB_INSTALL OFF CACHE BOOL "" FORCE)
+set(HTTPLIB_TEST OFF CACHE BOOL "" FORCE)
 add_subdirectory(vendor/cpp-httplib)
 
 # Mark the produced libraries as system libraries to silence build warnings for them.
