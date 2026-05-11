@@ -1,12 +1,14 @@
+#include "validation.h"
+
+#include "inventory/repository.h"
 #include "inventory/service.h"
-#include "inventory/validation.h"
 
 namespace ip_inv {
 
-InventoryService::InventoryService(IpInventoryRepository& repository)
-    : m_repository(repository) {}
+IpInventoryService::IpInventoryService(std::unique_ptr<IpInventoryRepository> repository)
+    : m_repository(std::move(repository)) {}
 
-AddToPoolResult InventoryService::addIpAddresses(const std::vector<IpAddress>& addresses) {
+AddToPoolResult IpInventoryService::addIpAddresses(const std::vector<IpAddress>& addresses) {
     AddToPoolResult result;
 
     if (addresses.empty()) {
@@ -16,7 +18,7 @@ AddToPoolResult InventoryService::addIpAddresses(const std::vector<IpAddress>& a
     }
 
     for (const auto& address : addresses) {
-        if (!isValidForType(address)) {
+        if (!isValidIPAddress(address)) {
             result.status.error = InventoryError::InvalidIp;
             result.status.detail = "Failed to add ip address; reason: invalid ip for declared type";
             result.failedIps.push_back(address);
@@ -27,7 +29,7 @@ AddToPoolResult InventoryService::addIpAddresses(const std::vector<IpAddress>& a
         return result;
     }
 
-    return m_repository.addIpAddresses(addresses);
+    return m_repository->addIpAddresses(addresses);
 }
 
 } // namespace ip_inv

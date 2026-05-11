@@ -69,10 +69,12 @@ set_property(TARGET httplib PROPERTY SYSTEM ON)
 set(ip_inventory_src
     main.cpp
 
+    src/app.cpp
+    src/validation.cpp
+
     src/inventory/types.cpp
-    src/inventory/validation.cpp
     src/inventory/service.cpp
-    src/inventory/repository_in_memory.cpp
+    src/inventory/sqllite3_repository.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------

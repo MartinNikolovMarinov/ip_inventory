@@ -1,17 +1,19 @@
 #pragma once
 
-#include "inventory/types.h"
+#include "inventory/repository.h"
+
+#include <memory>
 
 namespace ip_inv {
 
-class InventoryService {
+class IpInventoryService {
 public:
-    explicit InventoryService(IpInventoryRepository& repository);
+    explicit IpInventoryService(std::unique_ptr<IpInventoryRepository> repository);
 
     AddToPoolResult addIpAddresses(const std::vector<IpAddress>& addresses);
 
 private:
-    IpInventoryRepository& m_repository;
+    std::unique_ptr<IpInventoryRepository> m_repository;
 };
 
 } // namespace ip_inv
