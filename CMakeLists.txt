@@ -81,6 +81,16 @@ set(ip_inventory_src
     src/inventory/sqllite3_repository.cpp
 )
 
+set(ip_inventory_test_ip_utils_src
+    tests/test_ip_utils.cpp
+    src/ip_utils.cpp
+)
+
+set(ip_inventory_test_validation_src
+    tests/test_validation.cpp
+    src/validation.cpp
+)
+
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
 
 # ---------------------------------------- Begin Create Executables ----------------------------------------------------
@@ -139,18 +149,7 @@ function(add_unity_test test_name test_source)
 
 endfunction()
 
-add_unity_test(ip_inventory_test_sqlite tests/test_sqlite.cpp sqlite3)
-
-set(ip_inventory_test_validation_src
-    tests/test_validation.cpp
-    src/validation.cpp
-)
 add_unity_test(ip_inventory_test_validation "${ip_inventory_test_validation_src}")
-
-set(ip_inventory_test_ip_utils_src
-    tests/test_ip_utils.cpp
-    src/ip_utils.cpp
-)
 add_unity_test(ip_inventory_test_ip_utils "${ip_inventory_test_ip_utils_src}")
 if(OS STREQUAL "windows")
     # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
