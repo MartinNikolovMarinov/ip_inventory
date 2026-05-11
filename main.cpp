@@ -122,6 +122,7 @@ i32 main() {
     cfg.port = 8080;
 
     App app = App::create(std::move(cfg));
+    app.start();
 
     return 0;
 }

@@ -24,6 +24,9 @@ App App::create(AppConfig&& config) {
     if (!isValidPort(config.port)) {
         throw std::invalid_argument(std::format("invalid port: {}", config.port));
     }
+    if (config.ipAddress == "localhost") {
+        config.ipAddress = "127.0.0.1";
+    }
     if (!isValidIpv4Address(config.ipAddress.data(), config.ipAddress.length())) {
         throw std::invalid_argument(std::format("invalid ip address: {}", config.ipAddress));
     }
@@ -36,6 +39,10 @@ App App::create(AppConfig&& config) {
     app.m_inventoryService = std::make_unique<IpInventoryService>(std::move(inventoryRepository));
 
     return app;
+}
+
+void App::start() {
+    // TODO: start the app..
 }
 
 } // namespace ip_inv
