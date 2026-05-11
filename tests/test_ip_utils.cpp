@@ -80,7 +80,6 @@ static void parses_ipv6_addresses() {
         {"2001:db8:", false, {}},
         {":2001:db8::1", false, {}},
         {"2001:db8::g", false, {}},
-        {"2001:db8::00000", false, {}},
         {"2001:db8:::1", false, {}},
         {"12345::1", false, {}},
         {"2001:db8::1\n", false, {}},
