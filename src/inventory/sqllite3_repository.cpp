@@ -4,6 +4,7 @@
 
 #include <sqlite3.h>
 
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <format>
@@ -23,7 +24,6 @@ std::filesystem::path sqliteDatabasePath(const std::string& databaseName);
 
 std::string readTextFile(const std::filesystem::path& path);
 
-void assertSqliteOk(i32 result, sqlite3* db, const char* operation);
 void execSqlScriptFromFile(sqlite3* db, const std::filesystem::path& path);
 
 [[nodiscard]] bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out);
@@ -83,6 +83,12 @@ void IpInventoryRepositorySqlLite::initializeDb(bool dropCreate, std::filesystem
         // TODO: there should be a check to validate weather the necessary tables exist, or some migration scripts might be ran as well.
     }
 
+    assertSqliteOk(
+        sqlite3_exec(m_db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr),
+        m_db,
+        "Foreign keys much be enabled for every connection"
+    );
+
     std::cout << "SQL LITE database intialized successfully" << std::endl;
 }
 
@@ -108,7 +114,7 @@ AddToPoolResult IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<I
     SqliteStatement insertStm(
         m_db,
         R"sql(
-            INSERT INTO ip_pool (ip_type, ip_bytes, display_ip, assigned_id, reserved_ip)
+            INSERT INTO ip_pool (ip_type, ip_bytes, display_ip, assigned_id, reserved_id)
             VALUES (?, ?, ?, NULL, NULL)
             ON CONFLICT(ip_type, ip_bytes) DO NOTHING;
         )sql"
@@ -197,6 +203,36 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     return ret;
 }
 
+void IpInventoryRepositorySqlLite::clearExpiredReservations() {
+    using namespace std::chrono;
+
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        return;
+    }
+
+    SqliteTransaction tx (m_db);
+
+    SqliteStatement deleteExpiredStm(
+        m_db,
+        R"sql(
+            DELETE FROM reserved_ips
+            WHERE expiration_time < ?
+        )sql"
+    );
+
+    const i64 now = i64(system_clock::to_time_t(system_clock::now()));
+    deleteExpiredStm.bindInt64(1, now);
+    deleteExpiredStm.execute();
+
+    i32 deletedRows = sqlite3_changes(m_db);
+
+    tx.commit();
+
+    std::cout << "Deleted expired reservations count: " << deletedRows << std::endl;
+}
+
 //======================================================================================================================
 // Internal helper functions
 //======================================================================================================================
@@ -224,15 +260,6 @@ std::string readTextFile(const std::filesystem::path& path) {
     std::ostringstream content;
     content << file.rdbuf();
     return content.str();
-}
-
-void assertSqliteOk(i32 result, sqlite3* db, const char* operation) {
-    if (result == SQLITE_OK) {
-        return;
-    }
-
-    const char* error = db == nullptr ? "unknown sqlite error" : sqlite3_errmsg(db);
-    throw std::runtime_error(std::format("{}: {}", operation, error));
 }
 
 // This function is very unsafe, but it is used only on db initialization by trusted code.
@@ -267,11 +294,11 @@ void reserveIpAddressQuery(sqlite3* db, i64 serviceDbId, i64 expirationTime, con
         db,
         R"sql(
             UPDATE ip_pool
-            SET reserved_ip = ?
+            SET reserved_id = ?
             WHERE ip_type = ?
                 AND ip_bytes = ?
                 AND assigned_id IS NULL
-                AND reserved_ip IS NULL;
+                AND reserved_id IS NULL;
         )sql"
     );
 
@@ -327,7 +354,7 @@ bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out) {
             FROM ip_pool
             WHERE ip_type = ?
                 AND assigned_id IS NULL
-                AND reserved_ip IS NULL
+                AND reserved_id IS NULL
             LIMIT 1;
         )sql"
     );

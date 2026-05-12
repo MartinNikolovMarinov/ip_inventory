@@ -18,11 +18,14 @@ public:
     void initializeDb(bool dropCreate = false, std::filesystem::path schemaInitScriptPath = {}) override;
 
     [[nodiscard]] AddToPoolResult addIpAddresses(const std::vector<IpAddress>& addresses) override;
+
     [[nodiscard]] ReserveIpResult reserveIpAddress(
         const std::string& serviceId,
         IpTypeSelection ipTypeSection,
         i64 expirationTime
     ) override;
+
+    void clearExpiredReservations() override;
 
 private:
     std::string m_databaseName;

@@ -14,6 +14,8 @@ public:
     [[nodiscard]] AddToPoolResult addIpAddresses(std::vector<IpAddress>&& addresses);
     [[nodiscard]] ReserveIpResult reserveIpAddress(const std::string& serviceId, IpTypeSelection ipTypeSelection);
 
+    void clearExpiredReservations();
+
 private:
     std::unique_ptr<IpInventoryRepository> m_repository;
     usize m_reservationExpirationSeconds = 0;

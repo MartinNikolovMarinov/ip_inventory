@@ -9,7 +9,6 @@ namespace ip_inv {
 
 struct AddToPoolResult {
     InventoryStatus status;
-    std::vector<IpAddress> failedIps; // TODO: use the failed ips in the error response.
 
     [[nodiscard]] bool success() const noexcept {
         return status.success();
@@ -37,6 +36,7 @@ public:
         IpTypeSelection ipTypeSection,
         i64 expirationTime
     ) = 0;
+    virtual void clearExpiredReservations() = 0;
 };
 
 } // namespace ip_inv

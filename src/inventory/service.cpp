@@ -39,6 +39,10 @@ ReserveIpResult IpInventoryService::reserveIpAddress(const std::string& serviceI
     return m_repository->reserveIpAddress(serviceId, ipTypeSelection, expirationTime);
 }
 
+void IpInventoryService::clearExpiredReservations() {
+    m_repository->clearExpiredReservations();
+}
+
 //======================================================================================================================
 // Internal Helper Functions
 //======================================================================================================================
@@ -55,20 +59,19 @@ AddToPoolResult parseIpAddresses(std::vector<IpAddress>& addresses) {
     }
 
     for (auto& address : addresses) {
-        bool parseOk = false;
+        bool isParseOk = false;
         switch (address.type) {
             case IpType::IPv4:
-                parseOk = parseIpV4(address);
+                isParseOk = parseIpV4(address);
                 break;
             case IpType::IPv6:
-                parseOk = parseIpV6(address);
+                isParseOk = parseIpV6(address);
                 break;
         }
 
-        if (!parseOk) {
+        if (!isParseOk) {
             result.status.error = InventoryError::InvalidIp;
             result.status.detail = "Failed to add ip address; reason: invalid ip for declared type";
-            result.failedIps.push_back(address);
         }
     }
 

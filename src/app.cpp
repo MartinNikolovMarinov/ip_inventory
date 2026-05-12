@@ -76,7 +76,8 @@ struct App::Impl {
                     }
                 }
 
-                // TODO: Run GC
+                std::cout << "Running GC" << std::endl;
+                this->inventoryService->clearExpiredReservations();
             }
         });
 

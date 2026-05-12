@@ -8,7 +8,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <cctype>
 #include <exception>
 #include <format>
 #include <stdexcept>
