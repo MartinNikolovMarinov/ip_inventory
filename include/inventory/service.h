@@ -10,7 +10,7 @@ class IpInventoryService {
 public:
     explicit IpInventoryService(std::unique_ptr<IpInventoryRepository> repository);
 
-    AddToPoolResult addIpAddresses(const std::vector<IpAddress>& addresses);
+    AddToPoolResult addIpAddresses(std::vector<IpAddress>&& addresses);
 
 private:
     std::unique_ptr<IpInventoryRepository> m_repository;

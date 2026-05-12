@@ -1,6 +1,7 @@
 #include "handlers.h"
 
 #include "dtos.h"
+#include "types.h"
 
 #include <nlohmann/json.hpp>
 
@@ -12,9 +13,53 @@
 
 namespace ip_inv {
 
+using json = nlohmann::json;
+
 namespace {
 
-using json = nlohmann::json;
+bool parseIpType(const std::string& value, IpType& type);
+
+StatusResponseDto statusResponse(std::string statusCode, std::string statusMessage);
+void setJsonResponse(httplib::Response& response, HttpStatusCode status, const json& body);
+template <typename T>
+bool parseJsonRequest(const httplib::Request& request, T& dto, std::string& error);
+
+bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addresses, std::string& error);
+
+} // namespace
+
+//======================================================================================================================
+// PUBLIC
+//======================================================================================================================
+
+void addIpPoolHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
+    IpAddressesDto requestDto {};
+    std::string error;
+    if (!parseJsonRequest(req, requestDto, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    std::vector<IpAddress> addresses;
+    if (!toDomainIpAddresses(requestDto, addresses, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    AddToPoolResult result = inventoryService.addIpAddresses(std::move(addresses));
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
+        return;
+    }
+
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", "Successful operation. OK")));
+}
+
+//======================================================================================================================
+// Internal helper functions
+//======================================================================================================================
+
+namespace {
 
 bool parseIpType(const std::string& value, IpType& type) {
     if (value == "IPv4") {
@@ -36,8 +81,8 @@ StatusResponseDto statusResponse(std::string statusCode, std::string statusMessa
     };
 }
 
-void setJsonResponse(httplib::Response& response, int status, const json& body) {
-    response.status = status;
+void setJsonResponse(httplib::Response& response, HttpStatusCode status, const json& body) {
+    response.status = i32(status);
     response.set_content(body.dump(), "application/json");
 }
 
@@ -69,7 +114,7 @@ bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addr
     addresses.reserve(dto.ipAddresses.size());
     for (const IpAddressDto& ipAddressDto : dto.ipAddresses) {
         IpAddress address {};
-        address.value = ipAddressDto.ip;
+        address.str = ipAddressDto.ip;
         if (!parseIpType(ipAddressDto.ipType, address.type)) {
             error = std::format("Invalid ipType: {}", ipAddressDto.ipType);
             return false;
@@ -82,28 +127,5 @@ bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addr
 }
 
 } // namespace
-
-void addIpPoolHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
-    IpAddressesDto requestDto {};
-    std::string error;
-    if (!parseJsonRequest(req, requestDto, error)) {
-        setJsonResponse(res, 400, toJson(statusResponse("1", error)));
-        return;
-    }
-
-    std::vector<IpAddress> addresses;
-    if (!toDomainIpAddresses(requestDto, addresses, error)) {
-        setJsonResponse(res, 400, toJson(statusResponse("1", error)));
-        return;
-    }
-
-    AddToPoolResult result = inventoryService.addIpAddresses(addresses);
-    if (!result.success()) {
-        setJsonResponse(res, 400, toJson(statusResponse("1", result.status.detail)));
-        return;
-    }
-
-    setJsonResponse(res, 200, toJson(statusResponse("0", "Successful operation. OK")));
-}
 
 } // namespace ip_inv

@@ -5,13 +5,29 @@
 
 namespace ip_inv {
 
+namespace {
+
+AddToPoolResult parseIpAddresses(std::vector<IpAddress>&& addresses);
+
+} // namespace
+
 IpInventoryService::IpInventoryService(std::unique_ptr<IpInventoryRepository> repository)
     : m_repository(std::move(repository)) {}
 
-AddToPoolResult IpInventoryService::addIpAddresses(const std::vector<IpAddress>& addresses) {
+AddToPoolResult IpInventoryService::addIpAddresses(std::vector<IpAddress>&& addresses) {
+    auto result = parseIpAddresses(std::move(addresses));
+
+    if (!result.success()) {
+        return result;
+    }
+
+    return m_repository->addIpAddresses(addresses);
+}
+
+namespace {
+
+AddToPoolResult parseIpAddresses(std::vector<IpAddress>&& addresses) {
     AddToPoolResult result;
-    std::vector<IpAddress> parsedAddresses;
-    parsedAddresses.reserve(addresses.size());
 
     if (addresses.empty()) {
         result.status.error = InventoryError::EmptyInput;
@@ -19,15 +35,14 @@ AddToPoolResult IpInventoryService::addIpAddresses(const std::vector<IpAddress>&
         return result;
     }
 
-    for (const auto& address : addresses) {
-        IpAddress parsedAddress = address;
+    for (auto& address : addresses) {
         bool parseOk = false;
         switch (address.type) {
             case IpType::IPv4:
-                parseOk = parseIpV4(address.value, parsedAddress);
+                parseOk = parseIpV4(address);
                 break;
             case IpType::IPv6:
-                parseOk = parseIpV6(address.value, parsedAddress);
+                parseOk = parseIpV6(address);
                 break;
         }
 
@@ -36,16 +51,11 @@ AddToPoolResult IpInventoryService::addIpAddresses(const std::vector<IpAddress>&
             result.status.detail = "Failed to add ip address; reason: invalid ip for declared type";
             result.failedIps.push_back(address);
         }
-        else {
-            parsedAddresses.push_back(parsedAddress);
-        }
     }
 
-    if (!result.success()) {
-        return result;
-    }
-
-    return m_repository->addIpAddresses(parsedAddresses);
+    return result;
 }
+
+} // namespace
 
 } // namespace ip_inv

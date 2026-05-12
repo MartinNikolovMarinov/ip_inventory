@@ -79,7 +79,6 @@ set(ip_inventory_src
     src/dtos.cpp
     src/profiling.cpp
 
-    src/inventory/types.cpp
     src/inventory/service.cpp
     src/inventory/sqllite3_repository.cpp
 )

@@ -1,6 +1,7 @@
 #include "app.h"
 #include "handlers.h"
 #include "ip_utils.h"
+#include "types.h"
 #include "validation.h"
 #include "profiling.h"
 
@@ -24,7 +25,17 @@ namespace ip_inv {
 namespace {
 
 void configureHttpRoutes(App::Impl& app);
+
 void logEndpointCall(const std::string_view endpoint, const httplib::Request& req);
+
+template<typename Func>
+void endpointGuard(
+    const char* endpoint,
+    const httplib::Request& req,
+    httplib::Response& response,
+    Func&& func
+);
+
 void validateAppConfig(const AppConfig& config);
 
 } // namespace
@@ -171,15 +182,15 @@ void configureHttpRoutes(App::Impl& app) {
     constexpr const char* HEALTH_ENDPOINT = "/health";
     constexpr const char* IP_POOL_ENDPOINT = "/ip-inventory/ip-pool";
 
-    app.server.Get(HEALTH_ENDPOINT, [](const httplib::Request& req, httplib::Response& response) {
-        ScopeProfiler timer(HEALTH_ENDPOINT);
-        logEndpointCall(HEALTH_ENDPOINT, req);
-        response.set_content(R"({"status":"ok"})", "application/json");
+    app.server.Get(HEALTH_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(HEALTH_ENDPOINT, req, res, [&] {
+            res.set_content(R"({"status":"ok"})", "application/json");
+        });
     });
     app.server.Post("/ip-inventory/ip-pool", [&app](const httplib::Request& req, httplib::Response& res) {
-        ScopeProfiler timer(IP_POOL_ENDPOINT);
-        logEndpointCall(IP_POOL_ENDPOINT, req);
-        addIpPoolHandler(*app.inventoryService, req, res);
+        endpointGuard(IP_POOL_ENDPOINT, req, res, [&] {
+            addIpPoolHandler(*app.inventoryService, req, res);
+        });
     });
 }
 
@@ -206,6 +217,42 @@ void logEndpointCall(const std::string_view endpoint, const httplib::Request& re
     std::cout << std::endl;
 }
 
+template<typename Func>
+void endpointGuard(
+    const char* endpoint,
+    const httplib::Request& req,
+    httplib::Response& response,
+    Func&& func
+) {
+    try {
+        ScopeProfiler profiler(endpoint);
+
+        logEndpointCall(endpoint, req);
+
+        std::forward<Func>(func)();
+    }
+    catch (const std::exception& e) {
+        std::cerr
+            << "[ERROR]"
+            << " | endpoint=" << endpoint
+            << " | exception=" << e.what()
+            << std::endl;
+
+        response.status = i32(HttpStatusCode::InternalServerError);
+        response.set_content(R"({"status":"internal server error"})", "application/json");
+    }
+    catch (...) {
+        std::cerr
+            << "[ERROR]"
+            << " | endpoint=" << endpoint
+            << " | exception=unknown"
+            << std::endl;
+
+        response.status = i32(HttpStatusCode::InternalServerError);
+        response.set_content( R"({"status":"internal server error"})", "application/json");
+    }
+}
+
 void validateAppConfig(const AppConfig& config) {
     if (!isValidPort(config.port)) {
         throw std::invalid_argument(std::format("invalid port: {}", config.port));
@@ -214,7 +261,8 @@ void validateAppConfig(const AppConfig& config) {
         throw std::invalid_argument(std::format("invalid database name: {}", config.databaseName));
     }
     IpAddress ipAddress {};
-    if (!parseIpV4(config.ipAddress, ipAddress)) {
+    ipAddress.str = config.ipAddress;
+    if (!parseIpV4(ipAddress)) {
         throw std::invalid_argument(std::format("invalid ip address: {}", config.ipAddress));
     }
     if (config.serverThreadCount == 0) {

@@ -6,14 +6,6 @@
 
 namespace ip_inv {
 
-enum struct HttpMethod {
-    GET,
-    POST,
-    PATCH,
-    PUT,
-    DELETE
-};
-
 enum struct IpType {
     IPv4,
     IPv6
@@ -32,7 +24,7 @@ enum struct IpState {
 };
 
 struct IpAddress {
-    std::string value;
+    std::string str;
     u8 bytes[16] {};
     IpType type = IpType::IPv4;
 

@@ -102,7 +102,7 @@ AddToPoolResult IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<I
 
         assertSqliteOk(sqlite3_bind_text(statement, 1, ipType, -1, SQLITE_TRANSIENT), m_db, "bind ip_type");
         assertSqliteOk(sqlite3_bind_blob(statement, 2, address.bytes, byteCount, SQLITE_TRANSIENT), m_db, "bind ip_bytes");
-        assertSqliteOk(sqlite3_bind_text(statement, 3, address.value.c_str(), -1, SQLITE_TRANSIENT), m_db, "bind display_ip");
+        assertSqliteOk(sqlite3_bind_text(statement, 3, address.str.c_str(), -1, SQLITE_TRANSIENT), m_db, "bind display_ip");
 
         const int stepResult = sqlite3_step(statement);
         if (stepResult != SQLITE_DONE) {

@@ -45,4 +45,19 @@ constexpr u64 CORE_SECOND      = u64(1000 * CORE_MILLISECOND); //     1_000_000_
 constexpr u64 CORE_MINUTE      = u64(60 * CORE_SECOND);        //    60_000_000_000ns
 constexpr u64 CORE_HOUR        = u64(60 * CORE_MINUTE);        // 3_600_000_000_000ns
 
+enum struct HttpMethod : u8 {
+    GET,
+    POST,
+    PATCH,
+    PUT,
+    DELETE
+};
+
+enum struct HttpStatusCode : u32 {
+    Ok = 200,
+    BadRequest = 400,
+    NotFound = 404,
+    InternalServerError = 500
+};
+
 } // ip_inv

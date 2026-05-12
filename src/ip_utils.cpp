@@ -74,44 +74,36 @@ bool isStrictIpv4(std::string_view value) {
 
 } // namespace
 
-bool parseIpV4(const std::string& ipStr, IpAddress& address) {
+bool parseIpV4(IpAddress& address) {
     in_addr addr {};
 
-    if (!isStrictIpv4(ipStr)) {
+    if (!isStrictIpv4(address.str)) {
         return false;
     }
-    if (ipStr.length() >= INET_ADDRSTRLEN) {
+    if (address.str.length() >= INET_ADDRSTRLEN) {
         return false;
     }
-    if (inet_pton(AF_INET, ipStr.c_str(), &addr) != 1) {
+    if (inet_pton(AF_INET, address.str.c_str(), &addr) != 1) {
         return false;
     }
 
-    IpAddress parsed {};
-    parsed.value = ipStr;
-    parsed.type = IpType::IPv4;
-    std::memcpy(parsed.bytes, &addr, sizeof(addr));
+    std::memcpy(address.bytes, &addr, sizeof(addr));
 
-    address = parsed;
     return true;
 }
 
-bool parseIpV6(const std::string& ipStr, IpAddress& address) {
+bool parseIpV6(IpAddress& address) {
     in6_addr addr {};
 
-    if (ipStr.length() >= INET6_ADDRSTRLEN) {
+    if (address.str.length() >= INET6_ADDRSTRLEN) {
         return false;
     }
-    if (inet_pton(AF_INET6, ipStr.c_str(), &addr) != 1) {
+    if (inet_pton(AF_INET6, address.str.c_str(), &addr) != 1) {
         return false;
     }
 
-    IpAddress parsed {};
-    parsed.value = ipStr;
-    parsed.type = IpType::IPv6;
-    std::memcpy(parsed.bytes, &addr, sizeof(parsed.bytes));
+    std::memcpy(address.bytes, &addr, sizeof(address.bytes));
 
-    address = parsed;
     return true;
 }
 

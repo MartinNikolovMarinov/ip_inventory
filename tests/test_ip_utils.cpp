@@ -46,8 +46,8 @@ static void parses_ipv4_addresses() {
     };
 
     for (const TestCase& test : tests) {
-        IpAddress address {};
-        const bool parsed = parseIpV4(test.value, address);
+        IpAddress address {test.value, {}, IpType::IPv4};
+        const bool parsed = parseIpV4(address);
         TEST_ASSERT_EQUAL_MESSAGE(test.expected, parsed, test.value);
         if (parsed) {
             TEST_ASSERT_TRUE_MESSAGE(address == test.address, test.value);
@@ -91,8 +91,8 @@ static void parses_ipv6_addresses() {
     };
 
     for (const TestCase& test : tests) {
-        IpAddress address {};
-        const bool parsed = parseIpV6(test.value, address);
+        IpAddress address {test.value, {}, IpType::IPv6};
+        const bool parsed = parseIpV6(address);
         TEST_ASSERT_EQUAL_MESSAGE(test.expected, parsed, test.value);
         if (parsed) {
             TEST_ASSERT_TRUE_MESSAGE(address == test.address, test.value);
@@ -101,19 +101,19 @@ static void parses_ipv6_addresses() {
 }
 
 static void compares_equivalent_ip_addresses() {
-    IpAddress compressed {};
-    TEST_ASSERT_TRUE(parseIpV6("2001:db8::1", compressed));
+    IpAddress compressed {"2001:db8::1", {}, IpType::IPv6};
+    TEST_ASSERT_TRUE(parseIpV6(compressed));
 
-    IpAddress expanded {};
-    TEST_ASSERT_TRUE(parseIpV6("2001:0db8:0:0:0:0:0:1", expanded));
+    IpAddress expanded {"2001:0db8:0:0:0:0:0:1", {}, IpType::IPv6};
+    TEST_ASSERT_TRUE(parseIpV6(expanded));
 
     TEST_ASSERT_TRUE(compressed == expanded);
 
-    IpAddress compressedWithHost {};
-    TEST_ASSERT_TRUE(parseIpV6("2001:db8::2:1", compressedWithHost));
+    IpAddress compressedWithHost {"2001:db8::2:1", {}, IpType::IPv6};
+    TEST_ASSERT_TRUE(parseIpV6(compressedWithHost));
 
-    IpAddress expandedWithHost {};
-    TEST_ASSERT_TRUE(parseIpV6("2001:db8:0:0:0:0:2:1", expandedWithHost));
+    IpAddress expandedWithHost {"2001:db8:0:0:0:0:2:1", {}, IpType::IPv6};
+    TEST_ASSERT_TRUE(parseIpV6(expandedWithHost));
 
     TEST_ASSERT_TRUE(compressedWithHost == expandedWithHost);
     TEST_ASSERT_TRUE(compressed != compressedWithHost);
