@@ -43,6 +43,10 @@ struct ChangeServiceDto {
     std::string serviceId;
 };
 
+constexpr inline StatusResponseDto statusResponse(std::string statusCode, std::string statusMessage) {
+    return StatusResponseDto { std::move(statusCode), std::move(statusMessage) };
+}
+
 [[nodiscard]] nlohmann::json toJson(const IpAddressDto& dto);
 void fromJson(const nlohmann::json& json, IpAddressDto& dto);
 

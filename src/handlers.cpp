@@ -19,7 +19,6 @@ namespace {
 
 bool parseIpType(const std::string& value, IpType& type);
 
-StatusResponseDto statusResponse(std::string statusCode, std::string statusMessage);
 void setJsonResponse(httplib::Response& response, HttpStatusCode status, const json& body);
 template <typename T>
 bool parseJsonRequest(const httplib::Request& request, T& dto, std::string& error);
@@ -88,13 +87,6 @@ bool parseIpType(const std::string& value, IpType& type) {
     }
 
     return false;
-}
-
-StatusResponseDto statusResponse(std::string statusCode, std::string statusMessage) {
-    return StatusResponseDto {
-        .statusCode = std::move(statusCode),
-        .statusMessage = std::move(statusMessage),
-    };
 }
 
 void setJsonResponse(httplib::Response& response, HttpStatusCode status, const json& body) {

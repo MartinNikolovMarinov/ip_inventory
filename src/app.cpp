@@ -1,4 +1,5 @@
 #include "app.h"
+#include "dtos.h"
 #include "handlers.h"
 #include "ip_utils.h"
 #include "types.h"
@@ -195,7 +196,9 @@ void configureHttpRoutes(App::Impl& app) {
 
     app.server.Get(HEALTH_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(HEALTH_ENDPOINT, req, res, [&] {
-            res.set_content(R"({"status":"ok"})", "application/json");
+            auto statusDto = statusResponse("0", "healthy");
+            res.status = i32(HttpStatusCode::Ok);
+            res.set_content(toJson(statusDto).dump(), "application/json");
         });
     });
     app.server.Post("/ip-inventory/ip-pool", [&app](const httplib::Request& req, httplib::Response& res) {
@@ -269,8 +272,9 @@ void endpointGuard(
             << " | exception=" << e.what()
             << std::endl;
 
+        auto statusDto = statusResponse("1", "internal server error");
         response.status = i32(HttpStatusCode::InternalServerError);
-        response.set_content(R"({"status":"internal server error"})", "application/json");
+        response.set_content(toJson(statusDto).dump(), "application/json");
     }
     catch (...) {
         std::cerr
@@ -278,9 +282,9 @@ void endpointGuard(
             << " | endpoint=" << endpoint
             << " | exception=unknown"
             << std::endl;
-
+        auto statusDto = statusResponse("1", "internal server error");
         response.status = i32(HttpStatusCode::InternalServerError);
-        response.set_content( R"({"status":"internal server error"})", "application/json");
+        response.set_content(toJson(statusDto).dump(), "application/json");
     }
 }
 

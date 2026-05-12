@@ -1,11 +1,9 @@
-# TODO: Document every endpoint
-
 openapi: 3.0.3
 info:
   title: IP Inventory API
   version: 0.1.0
 servers:
-  - url: http://localhost:8080
+  - url: /
 paths:
   /health:
     get:
@@ -17,10 +15,137 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - status
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                healthy:
+                  value:
+                    statusCode: "0"
+                    statusMessage: healthy
+
+  /ip-inventory/ip-pool:
+    post:
+      summary: Add IP addresses to the inventory pool
+      operationId: addIpPool
+      description: |
+        Adds one or more IPv4 or IPv6 addresses to the IP inventory pool.
+
+        The request body must contain a non-empty `ipAddresses` array. Each item declares the textual IP address and its
+        IP type. The server validates each address against the declared type before storing it. IPv4 input is accepted
+        only in strict dotted-decimal form, with four decimal segments, no leading zeroes except the single value `0`,
+        and each segment in the range `0..255`. IPv6 input is parsed with standard IPv6 syntax, including compressed
+        forms.
+
+        Addresses are stored in the pool with the initial state `available`. The current implementation ignores duplicate
+        pool entries at the database layer and still returns a successful status when the request is otherwise valid.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IpAddressesRequest"
+            examples:
+              mixedIpPool:
+                summary: Add IPv4 and IPv6 addresses
+                value:
+                  ipAddresses:
+                    - ip: 192.168.1.10
+                      ipType: IPv4
+                    - ip: 2001:db8::1
+                      ipType: IPv6
+      responses:
+        "200":
+          description: The IP addresses were accepted for the pool.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                success:
+                  value:
+                    statusCode: "0"
+                    statusMessage: Successful operation. OK
+        "400":
+          description: The request body, IP type, or one of the declared IP addresses is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                invalidJson:
+                  value:
+                    statusCode: "1"
+                    statusMessage: Invalid JSON request body
+                emptyAddresses:
+                  value:
+                    statusCode: "1"
+                    statusMessage: Request field 'ipAddresses' must be a non-empty array
+                invalidIpType:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Invalid ipType: IPv5"
+                invalidIp:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to add ip address; reason: invalid ip for declared type"
+        "500":
+          description: An unhandled server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                internalServerError:
+                  value:
+                    statusCode: "1"
+                    statusMessage: internal server error
+
+components:
+  schemas:
+    IpAddressesRequest:
+      type: object
+      required:
+        - ipAddresses
+      properties:
+        ipAddresses:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/IpAddress"
+      additionalProperties: false
+
+    IpAddress:
+      type: object
+      required:
+        - ip
+        - ipType
+      properties:
+        ip:
+          type: string
+          description: IPv4 or IPv6 address text. The value must match the declared `ipType`.
+          examples:
+            - 192.168.1.10
+            - 2001:db8::1
+        ipType:
+          type: string
+          enum:
+            - IPv4
+            - IPv6
+          description: Declared address family used when validating and storing the IP address.
+      additionalProperties: false
+
+    StatusResponse:
+      type: object
+      required:
+        - statusCode
+        - statusMessage
+      properties:
+        statusCode:
+          type: string
+          description: Application status code. `0` means success; `1` means failure.
+          enum:
+            - "0"
+            - "1"
+        statusMessage:
+          type: string
+          description: Human-readable result message.
+      additionalProperties: false
