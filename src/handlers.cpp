@@ -3,10 +3,12 @@
 #include "dtos.h"
 #include "inventory/inventory_types.h"
 #include "inventory/repository.h"
+#include "str_utils.h"
 #include "types.h"
 
 #include <nlohmann/json.hpp>
 
+#include <cctype>
 #include <exception>
 #include <format>
 #include <stdexcept>
@@ -21,6 +23,7 @@ using json = nlohmann::json;
 namespace {
 
 bool parseIpType(const std::string& value, IpType& type);
+bool parseIpTypeSelection(const std::string& value, IpTypeSelection& ipTypeSelection);
 bool serializeIpType(IpType type, std::string& out);
 
 void setJsonResponse(httplib::Response& response, HttpStatusCode status, const json& body);
@@ -68,13 +71,13 @@ void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Reque
         return;
     }
 
-    IpType ipType;
-    if (!parseIpType(requestDto.ipType, ipType)) {
+    IpTypeSelection ipTypeSection;
+    if (!parseIpTypeSelection(requestDto.ipType, ipTypeSection)) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", "Failed to parse ip type")));
         return;
     }
 
-    ReserveIpResult result = inventoryService.reserveIpAddress(requestDto.serviceId, ipType);
+    ReserveIpResult result = inventoryService.reserveIpAddress(requestDto.serviceId, ipTypeSection);
     if (!result.success()) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
         return;
@@ -123,12 +126,29 @@ void serveFileHandler(const char* path, const char* contentType, httplib::Respon
 namespace {
 
 bool parseIpType(const std::string& value, IpType& type) {
-    if (value == "IPv4") {
+    if (eqIgnoreCase(value, "ipv4")) {
         type = IpType::IPv4;
         return true;
     }
-    if (value == "IPv6") {
+    else if (eqIgnoreCase(value, "ipv6")) {
         type = IpType::IPv6;
+        return true;
+    }
+
+    return false;
+}
+
+bool parseIpTypeSelection(const std::string& value, IpTypeSelection& ipTypeSelection) {
+    if (eqIgnoreCase(value, "ipv4")) {
+        ipTypeSelection = IpTypeSelection::IPv4;
+        return true;
+    }
+    else if (eqIgnoreCase(value, "ipv6")) {
+        ipTypeSelection = IpTypeSelection::IPv6;
+        return true;
+    }
+    else if (eqIgnoreCase(value, "both")) {
+        ipTypeSelection = IpTypeSelection::Both;
         return true;
     }
 

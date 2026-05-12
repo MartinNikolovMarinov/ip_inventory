@@ -12,7 +12,7 @@ public:
     explicit IpInventoryService(std::unique_ptr<IpInventoryRepository> repository, usize reservationExpirationSeconds);
 
     [[nodiscard]] AddToPoolResult addIpAddresses(std::vector<IpAddress>&& addresses);
-    [[nodiscard]] ReserveIpResult reserveIpAddress(const std::string& serviceId, IpType ipType);
+    [[nodiscard]] ReserveIpResult reserveIpAddress(const std::string& serviceId, IpTypeSelection ipTypeSelection);
 
 private:
     std::unique_ptr<IpInventoryRepository> m_repository;

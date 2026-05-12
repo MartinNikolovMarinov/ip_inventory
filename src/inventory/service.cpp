@@ -1,3 +1,4 @@
+#include "inventory/inventory_types.h"
 #include "ip_utils.h"
 
 #include "inventory/repository.h"
@@ -31,13 +32,11 @@ AddToPoolResult IpInventoryService::addIpAddresses(std::vector<IpAddress>&& addr
     return m_repository->addIpAddresses(std::move(addresses));
 }
 
-ReserveIpResult IpInventoryService::reserveIpAddress(const std::string& serviceId, IpType ipType) {
+ReserveIpResult IpInventoryService::reserveIpAddress(const std::string& serviceId, IpTypeSelection ipTypeSelection) {
     using namespace std::chrono;
     ReserveIpResult result;
     const i64 expirationTime = i64(system_clock::to_time_t(system_clock::now() + seconds(m_reservationExpirationSeconds)));
-
-    const IpTypeSelection ipTypeSection = ipType == IpType::IPv4 ? IpTypeSelection::IPv4 : IpTypeSelection::IPv6;
-    return m_repository->reserveIpAddress(serviceId, ipTypeSection, expirationTime);
+    return m_repository->reserveIpAddress(serviceId, ipTypeSelection, expirationTime);
 }
 
 //======================================================================================================================

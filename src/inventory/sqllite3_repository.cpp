@@ -153,8 +153,11 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     bool ipv4IsRequested = ipTypeSelection == IpTypeSelection::IPv4 || ipTypeSelection == IpTypeSelection::Both;
     bool ipv6IsRequested = ipTypeSelection == IpTypeSelection::IPv6 || ipTypeSelection == IpTypeSelection::Both;
 
+
     IpAddress ipv4;
     if (ipv4IsRequested) {
+        std::cout << "Requested to reserve IPV4 address" << std::endl;
+
         if (!findAvailableIpAddressQuery(m_db, IpType::IPv4, ipv4)) {
             ret.status.error = InventoryError::IpUnavailable;
             ret.status.detail = "Failed to reserve IP address; reason: no available IPv4 addresses";
@@ -164,6 +167,8 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
 
     IpAddress ipv6;
     if (ipv6IsRequested) {
+        std::cout << "Requested to reserve IPV6 address" << std::endl;
+
         if (!findAvailableIpAddressQuery(m_db, IpType::IPv6, ipv6)) {
             ret.status.error = InventoryError::IpUnavailable;
             ret.status.detail = "Failed to reserve IP address; reason: no available IPv6 addresses";
@@ -186,6 +191,8 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     }
 
     tx.commit();
+
+    std::cout << "Reserve request finished successfully" << std::endl;
 
     return ret;
 }
