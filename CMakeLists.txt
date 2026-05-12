@@ -73,8 +73,11 @@ set(ip_inventory_src
     main.cpp
 
     src/app.cpp
+    src/handlers.cpp
     src/ip_utils.cpp
     src/validation.cpp
+    src/dtos.cpp
+    src/profiling.cpp
 
     src/inventory/types.cpp
     src/inventory/service.cpp
@@ -151,6 +154,7 @@ endfunction()
 
 add_unity_test(ip_inventory_test_validation "${ip_inventory_test_validation_src}")
 add_unity_test(ip_inventory_test_ip_utils "${ip_inventory_test_ip_utils_src}")
+
 if(OS STREQUAL "windows")
     # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
     target_link_libraries(ip_inventory_test_ip_utils PRIVATE ws2_32)

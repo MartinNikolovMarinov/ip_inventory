@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+#include <nlohmann/json.hpp>
+
 #include <string>
 #include <vector>
 
@@ -22,7 +24,7 @@ struct IpAddressesDto {
 };
 
 struct StatusResponseDto {
-    i32 statusCode;
+    std::string statusCode;
     std::string statusMessage;
 };
 
@@ -40,5 +42,26 @@ struct ChangeServiceDto {
     std::string serviceOld;
     std::string serviceId;
 };
+
+[[nodiscard]] nlohmann::json toJson(const IpAddressDto& dto);
+void fromJson(const nlohmann::json& json, IpAddressDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const IpReserveDto& dto);
+void fromJson(const nlohmann::json& json, IpReserveDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const IpAddressesDto& dto);
+void fromJson(const nlohmann::json& json, IpAddressesDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const StatusResponseDto& dto);
+void fromJson(const nlohmann::json& json, StatusResponseDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const AssignIpDto& dto);
+void fromJson(const nlohmann::json& json, AssignIpDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const TerminateIpDto& dto);
+void fromJson(const nlohmann::json& json, TerminateIpDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const ChangeServiceDto& dto);
+void fromJson(const nlohmann::json& json, ChangeServiceDto& dto);
 
 } // namespace ip_inv
