@@ -13,6 +13,8 @@ i32 main() {
     AppConfig cfg;
     cfg.ipAddress = "localhost";
     cfg.databaseName = "ip_inventory.sqlite3";
+    cfg.schemaInitScriptPath = IP_INVENTORY_SOURCE_DIR "/schema/001_init_db.sql";
+    cfg.dropCreateDbOnStart = true;
     cfg.port = 8080;
     cfg.serverThreadCount = concurrency > 0 ? concurrency : 1;
     cfg.gcIntervalSeconds = 5;

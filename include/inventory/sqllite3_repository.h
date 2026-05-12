@@ -15,7 +15,7 @@ public:
     explicit IpInventoryRepositorySqlLite(std::string databaseName);
     ~IpInventoryRepositorySqlLite() noexcept override;
 
-    void initializeDb() override;
+    void initializeDb(bool dropCreate = false, std::filesystem::path schemaInitScriptPath = {}) override;
 
     [[nodiscard]] AddToPoolResult addIpAddresses(const std::vector<IpAddress>& addresses) override;
 

@@ -102,7 +102,7 @@ target_include_directories(ip_inventory PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_compile_definitions(ip_inventory PRIVATE
-    IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" # TODO: The ip inventory directory is used for service static files, it should instead use the binary directory and copy dist there!!
     IP_INVENTORY_SQLITE3_DB_ROOT="${IP_INVENTORY_SQLITE3_DB_ROOT}"
 )
 

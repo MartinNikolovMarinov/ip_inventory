@@ -21,7 +21,7 @@ bool parseIpType(const std::string& value, IpType& type);
 
 void setJsonResponse(httplib::Response& response, HttpStatusCode status, const json& body);
 template <typename T>
-bool parseJsonRequest(const httplib::Request& request, T& dto, std::string& error);
+bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error);
 
 bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addresses, std::string& error);
 
@@ -95,8 +95,8 @@ void setJsonResponse(httplib::Response& response, HttpStatusCode status, const j
 }
 
 template <typename T>
-bool parseJsonRequest(const httplib::Request& request, T& dto, std::string& error) {
-    const json body = json::parse(request.body, nullptr, false);
+bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error) {
+    const json body = json::parse(req.body, nullptr, false);
     if (body.is_discarded() || !body.is_object()) {
         error = "Invalid JSON request body";
         return false;

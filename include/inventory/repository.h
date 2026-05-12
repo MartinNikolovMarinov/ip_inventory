@@ -2,6 +2,7 @@
 
 #include "inventory/inventory_types.h"
 
+#include <filesystem>
 #include <vector>
 
 namespace ip_inv {
@@ -19,7 +20,7 @@ class IpInventoryRepository {
 public:
     virtual ~IpInventoryRepository() noexcept = default;
 
-    virtual void initializeDb() = 0;
+    virtual void initializeDb(bool dropCreate = false, std::filesystem::path schemaInitScriptPath = {}) = 0;
 
     [[nodiscard]] virtual AddToPoolResult addIpAddresses(const std::vector<IpAddress>& addresses) = 0;
 };

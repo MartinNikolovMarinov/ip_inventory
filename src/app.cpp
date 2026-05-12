@@ -13,6 +13,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <filesystem>
 #include <format>
 #include <iostream>
 #include <memory>
@@ -165,7 +166,7 @@ App App::create(AppConfig&& config) {
     configureHttpRoutes(*impl);
 
     auto inventoryRepository = std::make_unique<IpInventoryRepositorySqlLite>(impl->cfg.databaseName);
-    inventoryRepository->initializeDb();
+    inventoryRepository->initializeDb(impl->cfg.dropCreateDbOnStart, impl->cfg.schemaInitScriptPath);
     impl->inventoryService = std::make_unique<IpInventoryService>(std::move(inventoryRepository));
 
     App app(std::move(impl));
@@ -258,6 +259,12 @@ void endpointGuard(
     httplib::Response& response,
     Func&& func
 ) {
+    // TODO: Add cheap request-level safety checks before handlers parse or allocate:
+    //       * reject request bodies above the endpoint's expected maximum size
+    //       * require application/json for JSON endpoints
+    //       * keep DTO/domain validation strict: bounded arrays, bounded strings, known fields, known enum values
+    //       * keep SQL injection resistance in repository code by using prepared statements and bound parameters only
+
     try {
         ScopeProfiler profiler(endpoint);
 
@@ -294,6 +301,14 @@ void validateAppConfig(const AppConfig& config) {
     }
     if (!isValidDatabaseName(config.databaseName)) {
         throw std::invalid_argument(std::format("invalid database name: {}", config.databaseName));
+    }
+    if (config.dropCreateDbOnStart) {
+        if (config.schemaInitScriptPath.empty()) {
+            throw std::invalid_argument("schema init script path must not be empty when drop-create is enabled");
+        }
+        if (!std::filesystem::is_regular_file(config.schemaInitScriptPath)) {
+            throw std::invalid_argument(std::format("schema init script does not exist: {}", config.schemaInitScriptPath));
+        }
     }
     IpAddress ipAddress {};
     ipAddress.str = config.ipAddress;
