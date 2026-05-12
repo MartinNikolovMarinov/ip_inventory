@@ -95,6 +95,22 @@ void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Reque
     setJsonResponse(res, HttpStatusCode::Ok, toJson(response));
 }
 
+void assignIpServiceIdHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
+    throw std::runtime_error("assign-ip-serviceId handler not implemented");
+}
+
+void terminateIpServiceIdHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
+    throw std::runtime_error("terminate-ip-serviceId handler not implemented");
+}
+
+void serviceIdChangeHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
+    throw std::runtime_error("serviceId-change handler not implemented");
+}
+
+void getServiceIdHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
+    throw std::runtime_error("serviceId handler not implemented");
+}
+
 void serveFileHandler(const char* path, const char* contentType, httplib::Response& response) {
     std::ifstream file(path, std::ios::binary);
     if (!file) {

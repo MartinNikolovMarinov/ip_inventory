@@ -8,6 +8,10 @@ namespace ip_inv {
 
 void addIpPoolHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
+void assignIpServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
+void terminateIpServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
+void serviceIdChangeHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
+void getServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 
 void serveFileHandler(const char* path, const char* contentType, httplib::Response& response);
 

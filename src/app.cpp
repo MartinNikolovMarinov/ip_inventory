@@ -31,12 +31,6 @@ namespace {
 void configureHttpRoutes(App::Impl& app);
 
 void logEndpointCall(const std::string_view endpoint, const httplib::Request& req);
-void registerStaticFileRoute(
-    httplib::Server& server,
-    const char* endpoint,
-    const char* path,
-    const char* contentType
-);
 
 template<typename Func>
 void endpointGuard(
@@ -166,7 +160,10 @@ App App::create(AppConfig&& config) {
 
     auto inventoryRepository = std::make_unique<IpInventoryRepositorySqlLite>(impl->cfg.databaseName);
     inventoryRepository->initializeDb(impl->cfg.dropCreateDbOnStart, impl->cfg.schemaInitScriptPath);
-    impl->inventoryService = std::make_unique<IpInventoryService>(std::move(inventoryRepository));
+    impl->inventoryService = std::make_unique<IpInventoryService>(
+        std::move(inventoryRepository),
+        impl->cfg.reservationExpirationSeconds
+    );
 
     App app(std::move(impl));
     std::cout << "Application created successfully" << std::endl;
@@ -191,6 +188,10 @@ void configureHttpRoutes(App::Impl& app) {
     constexpr const char* HEALTH_ENDPOINT = "/health";
     constexpr const char* IP_POOL_ENDPOINT = "/ip-inventory/ip-pool";
     constexpr const char* IP_RESERVE_ENDPOINT = "/ip-inventory/reserve-ip";
+    constexpr const char* IP_ASSIGN_SERVICE_ID_ENDPOINT = "/ip-inventory/assign-ip-serviceId";
+    constexpr const char* IP_TERMINATE_SERVICE_ID_ENDPOINT = "/ip-inventory/terminate-ip-serviceId";
+    constexpr const char* SERVICE_ID_CHANGE_ENDPOINT = "/ip-inventory/serviceId-change";
+    constexpr const char* SERVICE_ID_ENDPOINT = "/ip-inventory/serviceId";
     constexpr const char* DOCS_NO_TRAILING_SLASH_ENDPOINT = "/docs";
     constexpr const char* DOCS_ENDPOINT = "/docs/";
     constexpr const char* OPENAPI_YAML_ENDPOINT = "/openapi.yaml";
@@ -210,6 +211,26 @@ void configureHttpRoutes(App::Impl& app) {
     app.server.Post(IP_RESERVE_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(IP_RESERVE_ENDPOINT, req, res, [&] {
             reserveIpHandler(*app.inventoryService, req, res);
+        });
+    });
+    app.server.Post(IP_ASSIGN_SERVICE_ID_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(IP_ASSIGN_SERVICE_ID_ENDPOINT, req, res, [&] {
+            assignIpServiceIdHandler(*app.inventoryService, req, res);
+        });
+    });
+    app.server.Post(IP_TERMINATE_SERVICE_ID_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(IP_TERMINATE_SERVICE_ID_ENDPOINT, req, res, [&] {
+            terminateIpServiceIdHandler(*app.inventoryService, req, res);
+        });
+    });
+    app.server.Post(SERVICE_ID_CHANGE_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(SERVICE_ID_CHANGE_ENDPOINT, req, res, [&] {
+            serviceIdChangeHandler(*app.inventoryService, req, res);
+        });
+    });
+    app.server.Get(SERVICE_ID_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(SERVICE_ID_ENDPOINT, req, res, [&] {
+            getServiceIdHandler(*app.inventoryService, req, res);
         });
     });
 
@@ -325,6 +346,9 @@ void validateAppConfig(const AppConfig& config) {
     }
     if (config.gcIntervalSeconds == 0) {
         throw std::invalid_argument("gc interval seconds must be greater than zero");
+    }
+    if (config.reservationExpirationSeconds == 0) {
+        throw std::invalid_argument("reservation expiration seconds must be greater than zero");
     }
 }
 

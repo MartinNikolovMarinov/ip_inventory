@@ -13,8 +13,9 @@ AddToPoolResult parseIpAddresses(std::vector<IpAddress>& addresses);
 
 } // namespace
 
-IpInventoryService::IpInventoryService(std::unique_ptr<IpInventoryRepository> repository)
-    : m_repository(std::move(repository)) {}
+IpInventoryService::IpInventoryService(std::unique_ptr<IpInventoryRepository> repository, usize reservationExpirationSeconds)
+    : m_repository(std::move(repository)),
+      m_reservationExpirationSeconds(reservationExpirationSeconds) {}
 
 //======================================================================================================================
 // PUBLIC
@@ -33,7 +34,7 @@ AddToPoolResult IpInventoryService::addIpAddresses(std::vector<IpAddress>&& addr
 ReserveIpResult IpInventoryService::reserveIpAddress(const std::string& serviceId, IpType ipType) {
     using namespace std::chrono;
     ReserveIpResult result;
-    const i64 expirationTime = i64(system_clock::to_time_t(system_clock::now() + minutes(20))); // TODO: allow expiration time to be configurable
+    const i64 expirationTime = i64(system_clock::to_time_t(system_clock::now() + seconds(m_reservationExpirationSeconds)));
 
     const IpTypeSelection ipTypeSection = ipType == IpType::IPv4 ? IpTypeSelection::IPv4 : IpTypeSelection::IPv6;
     return m_repository->reserveIpAddress(serviceId, ipTypeSection, expirationTime);

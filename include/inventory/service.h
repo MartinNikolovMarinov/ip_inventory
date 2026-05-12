@@ -9,13 +9,14 @@ namespace ip_inv {
 
 class IpInventoryService {
 public:
-    explicit IpInventoryService(std::unique_ptr<IpInventoryRepository> repository);
+    explicit IpInventoryService(std::unique_ptr<IpInventoryRepository> repository, usize reservationExpirationSeconds);
 
     [[nodiscard]] AddToPoolResult addIpAddresses(std::vector<IpAddress>&& addresses);
     [[nodiscard]] ReserveIpResult reserveIpAddress(const std::string& serviceId, IpType ipType);
 
 private:
     std::unique_ptr<IpInventoryRepository> m_repository;
+    usize m_reservationExpirationSeconds = 0;
 };
 
 } // namespace ip_inv

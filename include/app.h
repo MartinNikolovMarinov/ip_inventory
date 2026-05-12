@@ -15,6 +15,7 @@ struct AppConfig {
     i32 port;
     usize serverThreadCount = 4;
     usize gcIntervalSeconds = 60;
+    usize reservationExpirationSeconds = 20 * 60;
 };
 
 class App {
