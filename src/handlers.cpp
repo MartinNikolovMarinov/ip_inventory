@@ -29,6 +29,8 @@ bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error);
 
 bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addresses, std::string& error);
 
+IpAddressesDto toDtoIpAddress(const ReserveIpResult& result);
+
 } // namespace
 
 //======================================================================================================================
@@ -78,21 +80,8 @@ void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Reque
         return;
     }
 
-    IpAddressesDto response;
-    response.ipAddresses.reserve(result.reservedIps.size());
-
-    for (const auto& addr : result.reservedIps) {
-        IpAddressDto dto;
-
-        dto.ip = addr.str;
-        if (!serializeIpType(addr.type, dto.ipType)) {
-            throw std::runtime_error("failed to serialize response");
-        }
-
-        response.ipAddresses.push_back(std::move(dto));
-    }
-
-    setJsonResponse(res, HttpStatusCode::Ok, toJson(response));
+    IpAddressesDto responseDto = toDtoIpAddress(result);
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
 }
 
 void assignIpServiceIdHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
@@ -202,6 +191,24 @@ bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addr
     }
 
     return true;
+}
+
+IpAddressesDto toDtoIpAddress(const ReserveIpResult& result) {
+    IpAddressesDto responseDto;
+    responseDto.ipAddresses.reserve(result.reservedIps.size());
+
+    for (const auto& addr : result.reservedIps) {
+        IpAddressDto dto;
+
+        dto.ip = addr.str;
+        if (!serializeIpType(addr.type, dto.ipType)) {
+            throw std::runtime_error("failed to serialize response");
+        }
+
+        responseDto.ipAddresses.push_back(std::move(dto));
+    }
+
+    return responseDto;
 }
 
 } // namespace

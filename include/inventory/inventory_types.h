@@ -7,8 +7,8 @@
 namespace ip_inv {
 
 enum struct IpType {
-    IPv4,
-    IPv6
+    IPv4 = 4,
+    IPv6 = 6
 };
 
 enum struct IpTypeSelection {
@@ -62,6 +62,7 @@ enum struct InventoryError {
     DbError,
     InvalidIp,
     EmptyInput,
+
     IpUnavailable
 };
 
