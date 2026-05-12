@@ -1,3 +1,5 @@
+# Curl for the /ip-inventory/ip-pool endpoint
+
 curl -X POST http://localhost:8080/ip-inventory/ip-pool \
   -H "Content-Type: application/json" \
   -d '{
@@ -12,3 +14,7 @@ curl -X POST http://localhost:8080/ip-inventory/ip-pool \
       }
     ]
   }'
+
+# Curl for the docs endpoint
+
+curl -sS -I http://127.0.0.1:8080/docs

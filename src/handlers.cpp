@@ -55,6 +55,22 @@ void addIpPoolHandler(IpInventoryService& inventoryService, const httplib::Reque
     setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", "Successful operation. OK")));
 }
 
+void serveFile(const char* path, const char* contentType, httplib::Response& response) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        response.status = i32(HttpStatusCode::NotFound);
+        response.set_content(R"({"status":"not found"})", "application/json");
+        return;
+    }
+
+    std::string content(
+        (std::istreambuf_iterator<char>(file)),
+        std::istreambuf_iterator<char>()
+    );
+
+    response.set_content(std::move(content), contentType);
+}
+
 //======================================================================================================================
 // Internal helper functions
 //======================================================================================================================

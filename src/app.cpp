@@ -17,6 +17,8 @@
 #include <memory>
 #include <mutex>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 
@@ -27,6 +29,12 @@ namespace {
 void configureHttpRoutes(App::Impl& app);
 
 void logEndpointCall(const std::string_view endpoint, const httplib::Request& req);
+void registerStaticFileRoute(
+    httplib::Server& server,
+    const char* endpoint,
+    const char* path,
+    const char* contentType
+);
 
 template<typename Func>
 void endpointGuard(
@@ -181,6 +189,9 @@ namespace {
 void configureHttpRoutes(App::Impl& app) {
     constexpr const char* HEALTH_ENDPOINT = "/health";
     constexpr const char* IP_POOL_ENDPOINT = "/ip-inventory/ip-pool";
+    constexpr const char* DOCS_NO_TRAILING_SLASH_ENDPOINT = "/docs";
+    constexpr const char* DOCS_ENDPOINT = "/docs/";
+    constexpr const char* OPENAPI_YAML_ENDPOINT = "/openapi.yaml";
 
     app.server.Get(HEALTH_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(HEALTH_ENDPOINT, req, res, [&] {
@@ -190,6 +201,26 @@ void configureHttpRoutes(App::Impl& app) {
     app.server.Post("/ip-inventory/ip-pool", [&app](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(IP_POOL_ENDPOINT, req, res, [&] {
             addIpPoolHandler(*app.inventoryService, req, res);
+        });
+    });
+
+    app.server.set_mount_point(
+        "/swagger-ui-assets",
+        IP_INVENTORY_SOURCE_DIR "/api/swagger-ui"
+    );
+    app.server.Get(DOCS_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(DOCS_ENDPOINT, req, res, [&] {
+            serveFile(IP_INVENTORY_SOURCE_DIR "/api/openapi.html", "text/html", res);
+        });
+    });
+    app.server.Get(DOCS_NO_TRAILING_SLASH_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(DOCS_NO_TRAILING_SLASH_ENDPOINT, req, res, [&] {
+            serveFile(IP_INVENTORY_SOURCE_DIR "/api/openapi.html", "text/html", res);
+        });
+    });
+    app.server.Get(OPENAPI_YAML_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(OPENAPI_YAML_ENDPOINT, req, res, [&] {
+            serveFile(IP_INVENTORY_SOURCE_DIR "/api/openapi.yaml", "application/yaml", res);
         });
     });
 }

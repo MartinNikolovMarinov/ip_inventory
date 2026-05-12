@@ -17,6 +17,53 @@ namespace ip_inv {
 
 namespace {
 
+bool isStrictIpv4(std::string_view value);
+
+} // namespace
+
+//======================================================================================================================
+// PUBLIC
+//======================================================================================================================
+
+bool parseIpV4(IpAddress& address) {
+    in_addr addr {};
+
+    if (!isStrictIpv4(address.str)) {
+        return false;
+    }
+    if (address.str.length() >= INET_ADDRSTRLEN) {
+        return false;
+    }
+    if (inet_pton(AF_INET, address.str.c_str(), &addr) != 1) {
+        return false;
+    }
+
+    std::memcpy(address.bytes, &addr, sizeof(addr));
+
+    return true;
+}
+
+bool parseIpV6(IpAddress& address) {
+    in6_addr addr {};
+
+    if (address.str.length() >= INET6_ADDRSTRLEN) {
+        return false;
+    }
+    if (inet_pton(AF_INET6, address.str.c_str(), &addr) != 1) {
+        return false;
+    }
+
+    std::memcpy(address.bytes, &addr, sizeof(address.bytes));
+
+    return true;
+}
+
+//======================================================================================================================
+// Internal helper functions
+//======================================================================================================================
+
+namespace {
+
 // Keep IPv4 syntax policy deterministic across OS parsers. Some inet_pton implementations accept forms we do not want
 // in inventory input, so this helper rejects them before inet_pton performs byte conversion.
 //
@@ -73,38 +120,5 @@ bool isStrictIpv4(std::string_view value) {
 }
 
 } // namespace
-
-bool parseIpV4(IpAddress& address) {
-    in_addr addr {};
-
-    if (!isStrictIpv4(address.str)) {
-        return false;
-    }
-    if (address.str.length() >= INET_ADDRSTRLEN) {
-        return false;
-    }
-    if (inet_pton(AF_INET, address.str.c_str(), &addr) != 1) {
-        return false;
-    }
-
-    std::memcpy(address.bytes, &addr, sizeof(addr));
-
-    return true;
-}
-
-bool parseIpV6(IpAddress& address) {
-    in6_addr addr {};
-
-    if (address.str.length() >= INET6_ADDRSTRLEN) {
-        return false;
-    }
-    if (inet_pton(AF_INET6, address.str.c_str(), &addr) != 1) {
-        return false;
-    }
-
-    std::memcpy(address.bytes, &addr, sizeof(address.bytes));
-
-    return true;
-}
 
 } // namespace ip_inv
