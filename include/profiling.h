@@ -5,10 +5,10 @@
 
 namespace ip_inv {
 
-class ScopeTimer {
+class ScopeProfiler {
 public:
-    explicit ScopeTimer(std::string_view name);
-    ~ScopeTimer();
+    explicit ScopeProfiler(std::string_view name);
+    ~ScopeProfiler();
 
 private:
     std::string_view m_name;

@@ -172,12 +172,12 @@ void configureHttpRoutes(App::Impl& app) {
     constexpr const char* IP_POOL_ENDPOINT = "/ip-inventory/ip-pool";
 
     app.server.Get(HEALTH_ENDPOINT, [](const httplib::Request& req, httplib::Response& response) {
-        ScopeTimer timer(HEALTH_ENDPOINT);
+        ScopeProfiler timer(HEALTH_ENDPOINT);
         logEndpointCall(HEALTH_ENDPOINT, req);
         response.set_content(R"({"status":"ok"})", "application/json");
     });
     app.server.Post("/ip-inventory/ip-pool", [&app](const httplib::Request& req, httplib::Response& res) {
-        ScopeTimer timer(IP_POOL_ENDPOINT);
+        ScopeProfiler timer(IP_POOL_ENDPOINT);
         logEndpointCall(IP_POOL_ENDPOINT, req);
         addIpPoolHandler(*app.inventoryService, req, res);
     });
