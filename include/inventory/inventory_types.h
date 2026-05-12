@@ -30,10 +30,8 @@ struct IpAddress {
 
     [[nodiscard]] static constexpr usize byteCount(IpType ipType) noexcept {
         switch (ipType) {
-            case IpType::IPv4:
-                return 4;
-            case IpType::IPv6:
-                return 16;
+            case IpType::IPv4: return 4;
+            case IpType::IPv6: return 16;
         }
 
         return 0;
@@ -61,8 +59,10 @@ struct IpAddress {
 enum struct InventoryError {
     None,
     DbNotInitialized,
+    DbError,
     InvalidIp,
     EmptyInput,
+    IpUnavailable
 };
 
 struct InventoryStatus {

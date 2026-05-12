@@ -15,6 +15,14 @@ curl -X POST http://localhost:8080/ip-inventory/ip-pool \
     ]
   }'
 
+# Curl for ip reserve
+curl -i -X POST http://localhost:8080/ip-inventory/reserve-ip \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "serviceId": "service-a",
+    "ipType": "IPv4"
+  }'
+
 # Curl for the docs endpoint
 
 curl -sS -I http://127.0.0.1:8080/docs

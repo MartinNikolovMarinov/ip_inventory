@@ -9,7 +9,16 @@ namespace ip_inv {
 
 struct AddToPoolResult {
     InventoryStatus status;
-    std::vector<IpAddress> failedIps;
+    std::vector<IpAddress> failedIps; // TODO: use the failed ips in the error response.
+
+    [[nodiscard]] bool success() const noexcept {
+        return status.success();
+    }
+};
+
+struct ReserveIpResult {
+    InventoryStatus status;
+    std::vector<IpAddress> reservedIps;
 
     [[nodiscard]] bool success() const noexcept {
         return status.success();
@@ -23,6 +32,11 @@ public:
     virtual void initializeDb(bool dropCreate = false, std::filesystem::path schemaInitScriptPath = {}) = 0;
 
     [[nodiscard]] virtual AddToPoolResult addIpAddresses(const std::vector<IpAddress>& addresses) = 0;
+    [[nodiscard]] virtual ReserveIpResult reserveIpAddress(
+        const std::string& serviceId,
+        IpTypeSelection ipTypeSection,
+        i64 expirationTime
+    ) = 0;
 };
 
 } // namespace ip_inv

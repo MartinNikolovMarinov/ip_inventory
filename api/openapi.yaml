@@ -99,8 +99,96 @@ paths:
                     statusCode: "1"
                     statusMessage: internal server error
 
+  /ip-inventory/reserve-ip:
+    post:
+      summary: Reserve an IP address
+      operationId: reserveIp
+      description: |
+        Reserves an available IP address for the given service and requested IP type.
+
+        The request body matches the current `IpReserveDto` shape: a service identifier and an `ipType` value. On success,
+        the server returns an `ipAddresses` array using the same IP address DTO shape used by the pool endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IpReserveRequest"
+            examples:
+              reserveIpv4:
+                summary: Reserve an IPv4 address
+                value:
+                  serviceId: service-a
+                  ipType: IPv4
+              reserveIpv6:
+                summary: Reserve an IPv6 address
+                value:
+                  serviceId: service-a
+                  ipType: IPv6
+      responses:
+        "200":
+          description: An IP address was reserved for the service.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpAddressesRequest"
+              examples:
+                success:
+                  value:
+                    ipAddresses:
+                      - ip: 192.168.1.10
+                        ipType: IPv4
+        "400":
+          description: The request body, requested IP type, or reservation request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                invalidJson:
+                  value:
+                    statusCode: "1"
+                    statusMessage: Invalid JSON request body
+                invalidIpType:
+                  value:
+                    statusCode: "1"
+                    statusMessage: Failed to parse ip type
+                unavailable:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to reserve IP address; reason: IP is not available"
+        "500":
+          description: An unhandled server error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                internalServerError:
+                  value:
+                    statusCode: "1"
+                    statusMessage: internal server error
+
 components:
   schemas:
+    IpReserveRequest:
+      type: object
+      required:
+        - serviceId
+        - ipType
+      properties:
+        serviceId:
+          type: string
+          description: Service identifier that the reserved IP address belongs to.
+          example: service-a
+        ipType:
+          type: string
+          enum:
+            - IPv4
+            - IPv6
+          description: Requested address family for the reservation.
+      additionalProperties: false
+
     IpAddressesRequest:
       type: object
       required:

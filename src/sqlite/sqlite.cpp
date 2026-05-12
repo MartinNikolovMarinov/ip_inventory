@@ -101,7 +101,32 @@ void SqliteStatement::bindNull(i32 index) {
     assertSqliteOk(sqlite3_bind_null(m_statement, index), m_db, "bind null");
 }
 
-bool SqliteStatement::step() {
+i32 SqliteStatement::columnInt(i32 index) const {
+    return sqlite3_column_int(m_statement, index);
+}
+
+i64 SqliteStatement::columnInt64(i32 index) const {
+    return sqlite3_column_int64(m_statement, index);
+}
+
+const void* SqliteStatement::columnBlob(i32 index) const {
+    return sqlite3_column_blob(m_statement, index);
+}
+
+i32 SqliteStatement::columnBytes(i32 index) const {
+    return sqlite3_column_bytes(m_statement, index);
+}
+
+std::string SqliteStatement::columnText(i32 index) const {
+    const unsigned char* text = sqlite3_column_text(m_statement, index);
+    return text == nullptr ? std::string {} : reinterpret_cast<const char*>(text);
+}
+
+void SqliteStatement::execute() {
+    assertSqliteDone(sqlite3_step(m_statement), m_db, "execute statement");
+}
+
+bool SqliteStatement::stepRow() {
     const i32 result = sqlite3_step(m_statement);
     if (result == SQLITE_ROW) {
         return true;

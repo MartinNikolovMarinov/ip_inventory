@@ -1,12 +1,15 @@
 #include "handlers.h"
 
 #include "dtos.h"
+#include "inventory/inventory_types.h"
+#include "inventory/repository.h"
 #include "types.h"
 
 #include <nlohmann/json.hpp>
 
 #include <exception>
 #include <format>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -18,6 +21,7 @@ using json = nlohmann::json;
 namespace {
 
 bool parseIpType(const std::string& value, IpType& type);
+bool serializeIpType(IpType type, std::string& out);
 
 void setJsonResponse(httplib::Response& response, HttpStatusCode status, const json& body);
 template <typename T>
@@ -54,7 +58,44 @@ void addIpPoolHandler(IpInventoryService& inventoryService, const httplib::Reque
     setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", "Successful operation. OK")));
 }
 
-void serveFile(const char* path, const char* contentType, httplib::Response& response) {
+void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
+    IpReserveDto requestDto {};
+    std::string error;
+    if (!parseJsonRequest(req, requestDto, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    IpType ipType;
+    if (!parseIpType(requestDto.ipType, ipType)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", "Failed to parse ip type")));
+        return;
+    }
+
+    ReserveIpResult result = inventoryService.reserveIpAddress(requestDto.serviceId, ipType);
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
+        return;
+    }
+
+    IpAddressesDto response;
+    response.ipAddresses.reserve(result.reservedIps.size());
+
+    for (const auto& addr : result.reservedIps) {
+        IpAddressDto dto;
+
+        dto.ip = addr.str;
+        if (!serializeIpType(addr.type, dto.ipType)) {
+            throw std::runtime_error("failed to serialize response");
+        }
+
+        response.ipAddresses.push_back(std::move(dto));
+    }
+
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(response));
+}
+
+void serveFileHandler(const char* path, const char* contentType, httplib::Response& response) {
     std::ifstream file(path, std::ios::binary);
     if (!file) {
         response.status = i32(HttpStatusCode::NotFound);
@@ -84,6 +125,19 @@ bool parseIpType(const std::string& value, IpType& type) {
     if (value == "IPv6") {
         type = IpType::IPv6;
         return true;
+    }
+
+    return false;
+}
+
+bool serializeIpType(IpType type, std::string& out) {
+    switch (type) {
+        case IpType::IPv4:
+            out = "IPv4";
+            return true;
+        case IpType::IPv6:
+            out = "IPv6";
+            return true;
     }
 
     return false;

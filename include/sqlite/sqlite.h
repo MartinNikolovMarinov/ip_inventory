@@ -47,7 +47,14 @@ public:
     void bindBlob(i32 index, const void* data, i32 size);
     void bindNull(i32 index);
 
-    [[nodiscard]] bool step();
+    [[nodiscard]] i32 columnInt(i32 index) const;
+    [[nodiscard]] i64 columnInt64(i32 index) const;
+    [[nodiscard]] const void* columnBlob(i32 index) const;
+    [[nodiscard]] i32 columnBytes(i32 index) const;
+    [[nodiscard]] std::string columnText(i32 index) const;
+
+    void execute();
+    [[nodiscard]] bool stepRow();
     void reset();
     void clearBindings();
 
