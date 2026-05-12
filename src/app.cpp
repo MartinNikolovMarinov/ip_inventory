@@ -82,7 +82,6 @@ struct App::Impl {
                     }
                 }
 
-                std::cout << "gc triggered" << '\n';
                 // TODO: Run GC
             }
         });

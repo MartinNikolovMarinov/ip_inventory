@@ -60,11 +60,9 @@ struct IpAddress {
 
 enum struct InventoryError {
     None,
-    EmptyInput,
+    DbNotInitialized,
     InvalidIp,
-    DuplicateIp,
-    TypeMismatch,
-    IpAlreadyExists
+    EmptyInput,
 };
 
 struct InventoryStatus {

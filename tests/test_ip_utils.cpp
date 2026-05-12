@@ -119,7 +119,7 @@ static void compares_equivalent_ip_addresses() {
     TEST_ASSERT_TRUE(compressed != compressedWithHost);
 }
 
-int main() {
+i32 main() {
     UNITY_BEGIN();
     RUN_TEST(parses_ipv4_addresses);
     RUN_TEST(parses_ipv6_addresses);

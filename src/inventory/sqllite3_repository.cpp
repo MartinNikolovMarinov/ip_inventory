@@ -1,4 +1,5 @@
 #include "inventory/sqllite3_repository.h"
+#include "sqlite/sqlite.h"
 
 #include <sqlite3.h>
 
@@ -20,10 +21,14 @@ std::filesystem::path sqliteDatabasePath(const std::string& databaseName);
 
 std::string readTextFile(const std::filesystem::path& path);
 
-void assertSqliteOk(int result, sqlite3* db, const char* operation);
+void assertSqliteOk(i32 result, sqlite3* db, const char* operation);
 void execSqlScriptFromFile(sqlite3* db, const std::filesystem::path& path);
 
 } // namespace
+
+//======================================================================================================================
+// PUBLIC
+//======================================================================================================================
 
 IpInventoryRepositorySqlLite::IpInventoryRepositorySqlLite(std::string databaseName)
     : m_databaseName(std::move(databaseName)),
@@ -39,8 +44,6 @@ IpInventoryRepositorySqlLite::~IpInventoryRepositorySqlLite() noexcept {
 
 void IpInventoryRepositorySqlLite::initializeDb(bool dropCreate, std::filesystem::path schemaInitScriptPath) {
     std::cout << "Initializing SQL LITE database" << std::endl;
-
-    std::lock_guard lock(m_dbMutex);
 
     if (m_db != nullptr) {
         return;
@@ -75,11 +78,49 @@ void IpInventoryRepositorySqlLite::initializeDb(bool dropCreate, std::filesystem
 
 AddToPoolResult IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<IpAddress>& addresses) {
     AddToPoolResult ret;
-    std::lock_guard lock(m_dbMutex);
 
-    // TODO: implement
+    if (m_db == nullptr) {
+        ret.status.error = InventoryError::DbNotInitialized;
+        ret.status.detail = "Failed to add ip address; reason: database is not initialized";
+        return ret;
+    }
+
+    std::cout << "Add IP addresses transaction started" << std::endl;
+
+    std::lock_guard lock(m_dbMutex);
+    SqliteTransaction tx(m_db);
+    SqliteStatement insertStm(
+        m_db,
+        R"sql(
+            INSERT INTO ip_pool (ip_type, ip_bytes, display_ip, assigned_id, reserved_ip)
+            VALUES (?, ?, ?, NULL, NULL)
+            ON CONFLICT(ip_type, ip_bytes) DO NOTHING;
+        )sql"
+    );
+
+    for (const IpAddress& address : addresses) {
+        const i32 ipType = address.type == IpType::IPv4 ? 4 : 6;
+        const i32 byteCount = i32(IpAddress::byteCount(address.type));
+
+        insertStm.bindInt(1, ipType);
+        insertStm.bindBlob(2, address.bytes, byteCount);
+        insertStm.bindText(3, address.str);
+
+        (void)insertStm.step();
+        insertStm.reset();
+        insertStm.clearBindings();
+    }
+
+    tx.commit();
+
+    std::cout << "Add IP addresses transaction successfull" << std::endl;
+
     return ret;
 }
+
+//======================================================================================================================
+// Internal helper functions
+//======================================================================================================================
 
 namespace {
 
@@ -106,7 +147,7 @@ std::string readTextFile(const std::filesystem::path& path) {
     return content.str();
 }
 
-void assertSqliteOk(int result, sqlite3* db, const char* operation) {
+void assertSqliteOk(i32 result, sqlite3* db, const char* operation) {
     if (result == SQLITE_OK) {
         return;
     }
@@ -120,7 +161,7 @@ void execSqlScriptFromFile(sqlite3* db, const std::filesystem::path& path) {
     const std::string script = readTextFile(path);
 
     char* error = nullptr;
-    const int result = sqlite3_exec(db, script.c_str(), nullptr, nullptr, &error);
+    const i32 result = sqlite3_exec(db, script.c_str(), nullptr, nullptr, &error);
     if (result != SQLITE_OK) {
         const std::string message = error == nullptr ? "unknown sqlite error" : error;
         sqlite3_free(error);

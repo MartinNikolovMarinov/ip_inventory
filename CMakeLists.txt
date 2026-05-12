@@ -79,6 +79,8 @@ set(ip_inventory_src
     src/dtos.cpp
     src/profiling.cpp
 
+    src/sqlite/sqlite.cpp
+
     src/inventory/service.cpp
     src/inventory/sqllite3_repository.cpp
 )
@@ -102,7 +104,7 @@ target_include_directories(ip_inventory PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_compile_definitions(ip_inventory PRIVATE
-    IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" # TODO: The ip inventory directory is used for service static files, it should instead use the binary directory and copy dist there!!
+    IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" # TODO: The ip inventory directory is used for service static files, it should instead use the binary directory and copy dist there!! Same for schema sql.
     IP_INVENTORY_SQLITE3_DB_ROOT="${IP_INVENTORY_SQLITE3_DB_ROOT}"
 )
 
