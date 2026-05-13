@@ -30,6 +30,7 @@ void execSqlScriptFromFile(sqlite3* db, const std::filesystem::path& path);
 void reserveIpAddressQuery(sqlite3* db, i64 serviceDbId, i64 expirationTime, const IpAddress& address);
 void createServiceQuery(sqlite3* db, const std::string& serviceId);
 i64 findServicePrimaryKeyQuery(sqlite3* db, const std::string& serviceId);
+bool doesServiceExistQuery(sqlite3* db, const std::string& serviceId);
 
 } // namespace
 
@@ -158,6 +159,8 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     bool ipv4IsRequested = ipTypeSelection == IpTypeSelection::IPv4 || ipTypeSelection == IpTypeSelection::Both;
     bool ipv6IsRequested = ipTypeSelection == IpTypeSelection::IPv6 || ipTypeSelection == IpTypeSelection::Both;
 
+    SqliteTransaction tx(m_db);
+
     IpAddress ipv4;
     if (ipv4IsRequested) {
         std::cout << "Requested to reserve IPV4 address" << std::endl;
@@ -179,8 +182,6 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
             return ret;
         }
     }
-
-    SqliteTransaction tx(m_db);
 
     createServiceQuery(m_db, serviceId);
     i64 serviceDbId = findServicePrimaryKeyQuery(m_db, serviceId);
@@ -236,7 +237,7 @@ InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(const std::s
 }
 
 InventoryStatus IpInventoryRepositorySqlLite::changeServiceId(
-    const std::string& servideIdOld,
+    const std::string& serviceIdOld,
     const std::string& serviceIdNew
 ) {
     std::lock_guard lock(m_dbMutex);
@@ -248,9 +249,41 @@ InventoryStatus IpInventoryRepositorySqlLite::changeServiceId(
         return status;
     }
 
-    // TODO: implement change service id.
-    (void)servideIdOld;
-    (void)serviceIdNew;
+    SqliteTransaction tx (m_db);
+
+    if (!doesServiceExistQuery(m_db, serviceIdOld)) {
+        InventoryStatus status;
+        status.error = InventoryError::ServiceNotFound;
+        status.detail = std::format(
+            "Failed to change service id; reason: service ({}) does not exist",
+            serviceIdOld
+        );
+        return status;
+    }
+
+    SqliteStatement changeServiceIdStm(
+        m_db,
+        R"sql(
+            UPDATE services
+            SET service_id = ?
+            WHERE service_id = ?
+        )sql"
+    );
+
+    changeServiceIdStm.bindText(1, serviceIdNew);
+    changeServiceIdStm.bindText(2, serviceIdOld);
+    changeServiceIdStm.execute();
+
+    const i32 updated = sqlite3_changes(m_db);
+    if (updated != 1) {
+        throw std::runtime_error(
+            std::format("service change query must update exactly one record; actual = {}", updated)
+        );
+    }
+
+    tx.commit();
+
+    std::cout << "Service id changed from " << serviceIdOld << " to " << serviceIdNew << std::endl;
 
     return InventoryStatus::OkStatus();
 }
@@ -413,6 +446,35 @@ i64 findServicePrimaryKeyQuery(sqlite3* db, const std::string& serviceId) {
 
     i64 ret = findServiceStm.columnInt64(0);
     return ret;
+}
+
+bool doesServiceExistQuery(sqlite3* db, const std::string& serviceId) {
+    SqliteStatement findService(
+        db,
+        R"sql(
+            SELECT service_id
+            FROM services
+            WHERE service_id = ?
+        )sql"
+    );
+
+    findService.bindText(1, serviceId);
+
+    if (!findService.stepRow()) {
+        return false;
+    }
+
+    // If there is more than one row the db is inconsistent, because service_id has unique constraint set.
+    if (findService.stepRow()) {
+        throw std::runtime_error(
+            std::format(
+                "There are more than one service with id={}; database is inconsistent",
+                serviceId
+            )
+        );
+    }
+
+    return true;
 }
 
 bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out) {

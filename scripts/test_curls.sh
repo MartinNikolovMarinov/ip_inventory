@@ -23,6 +23,14 @@ curl -i -X POST http://localhost:8080/ip-inventory/reserve-ip \
     "ipType": "IPv4"
   }'
 
+# Curl for change service id
+curl -i -X POST http://localhost:8080/ip-inventory/serviceId-change \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "serviceIdOld": "service-b",
+    "serviceId": "service-a"
+  }'
+
 # Curl for the docs endpoint
 
 curl -sS -I http://127.0.0.1:8080/docs

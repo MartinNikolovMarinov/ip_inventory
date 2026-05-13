@@ -63,6 +63,7 @@ enum struct InventoryError {
     DbError,
     InvalidIp,
     EmptyInput,
+    ServiceNotFound,
 
     IpUnavailable
 };

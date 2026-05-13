@@ -14,10 +14,10 @@ i32 main() {
     cfg.ipAddress = "localhost";
     cfg.databaseName = "ip_inventory.sqlite3";
     cfg.schemaInitScriptPath = IP_INVENTORY_SOURCE_DIR "/schema/001_init_db.sql";
-    cfg.dropCreateDbOnStart = true;
+    cfg.dropCreateDbOnStart = false;
     cfg.port = 8080;
     cfg.serverThreadCount = concurrency > 0 ? concurrency : 1;
-    cfg.gcIntervalSeconds = 5;
+    cfg.gcIntervalSeconds = 60;
     cfg.reservationExpirationSeconds = 10;
 
     App app = App::create(std::move(cfg));
