@@ -2,6 +2,7 @@
 
 #include "dtos.h"
 #include "inventory/inventory_types.h"
+#include "ip_utils.h"
 #include "str_utils.h"
 #include "types.h"
 
@@ -29,13 +30,19 @@ void setJsonResponse(httplib::Response& response, HttpStatusCode status, const j
 template <typename T>
 bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error);
 
-bool toDomainIpAddresses(
+bool parseIpAddressDtos(
     const std::vector<IpAddressDto>& dtoAddresses,
     std::vector<IpAddress>& addresses,
     std::string& error
 );
 
-IpAddressesDto toDtoIpAddress(const std::vector<IpAddress>& reservedIps);
+bool parseIpStrings(
+    const std::vector<std::string>& ipStrings,
+    std::vector<IpAddress>& addresses,
+    std::string& error
+);
+
+IpAddressesDto makeIpAddressesDto(const std::vector<IpAddress>& reservedIps);
 
 } // namespace
 
@@ -52,7 +59,7 @@ void addIpPoolHandler(IpInventoryService& inventoryService, const httplib::Reque
     }
 
     std::vector<IpAddress> addresses;
-    if (!toDomainIpAddresses(requestDto.ipAddresses, addresses, error)) {
+    if (!parseIpAddressDtos(requestDto.ipAddresses, addresses, error)) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
         return;
     }
@@ -86,7 +93,7 @@ void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Reque
         return;
     }
 
-    IpAddressesDto responseDto = toDtoIpAddress(result.reservedIps);
+    IpAddressesDto responseDto = makeIpAddressesDto(result.reservedIps);
     setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
 }
 
@@ -99,7 +106,7 @@ void assignIpServiceIdHandler(IpInventoryService& inventoryService, const httpli
     }
 
     std::vector<IpAddress> addresses;
-    if (!toDomainIpAddresses(requestDto.ipAddresses, addresses, error)) {
+    if (!parseIpStrings(requestDto.ipAddresses, addresses, error)) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
         return;
     }
@@ -122,7 +129,7 @@ void terminateIpServiceIdHandler(IpInventoryService& inventoryService, const htt
     }
 
     std::vector<IpAddress> addresses;
-    if (!toDomainIpAddresses(requestDto.ipAddresses, addresses, error)) {
+    if (!parseIpStrings(requestDto.ipAddresses, addresses, error)) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
         return;
     }
@@ -180,7 +187,7 @@ void getServiceIdHandler(IpInventoryService& inventoryService, const httplib::Re
         return;
     }
 
-    IpAddressesDto responseDto = toDtoIpAddress(result.serviceIps);
+    IpAddressesDto responseDto = makeIpAddressesDto(result.serviceIps);
     setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
 }
 
@@ -272,7 +279,7 @@ bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error) {
     return true;
 }
 
-bool toDomainIpAddresses(
+bool parseIpAddressDtos(
     const std::vector<IpAddressDto>& dtoAddresses,
     std::vector<IpAddress>& addresses,
     std::string& error
@@ -297,7 +304,40 @@ bool toDomainIpAddresses(
     return true;
 }
 
-IpAddressesDto toDtoIpAddress(const std::vector<IpAddress>& reservedIps) {
+bool parseIpStrings(
+    const std::vector<std::string>& ipStrings,
+    std::vector<IpAddress>& addresses,
+    std::string& error
+) {
+    if (ipStrings.empty()) {
+        error = "Request field 'ipAddresses' must be a non-empty array";
+        return false;
+    }
+
+    addresses.reserve(ipStrings.size());
+
+    for (const std::string& ipStr : ipStrings) {
+        IpAddress address {};
+        address.str = ipStr;
+
+        if (parseIpV4(address)) {
+            address.type = IpType::IPv4;
+        }
+        else if (parseIpV6(address)) {
+            address.type = IpType::IPv6;
+        }
+        else {
+            error = std::format("Invalid IP address: {}", ipStr);
+            return false;
+        }
+
+        addresses.push_back(std::move(address));
+    }
+
+    return true;
+}
+
+IpAddressesDto makeIpAddressesDto(const std::vector<IpAddress>& reservedIps) {
     IpAddressesDto responseDto;
     responseDto.ipAddresses.reserve(reservedIps.size());
 

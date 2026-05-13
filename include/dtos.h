@@ -28,12 +28,12 @@ struct StatusResponseDto {
 
 struct AssignIpDto {
     std::string serviceId;
-    std::vector<IpAddressDto> ipAddresses;
+    std::vector<std::string> ipAddresses;
 };
 
 struct TerminateIpDto {
     std::string serviceId;
-    std::vector<IpAddressDto> ipAddresses;
+    std::vector<std::string> ipAddresses;
 };
 
 struct ChangeServiceDto {

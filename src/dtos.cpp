@@ -65,8 +65,8 @@ void fromJson(const nlohmann::json& json, StatusResponseDto& dto) {
 
 nlohmann::json toJson(const AssignIpDto& dto) {
     nlohmann::json ipAddresses = nlohmann::json::array();
-    for (const IpAddressDto& ipAddress : dto.ipAddresses) {
-        ipAddresses.push_back(toJson(ipAddress));
+    for (const std::string& ipAddress : dto.ipAddresses) {
+        ipAddresses.push_back(ipAddress);
     }
 
     return nlohmann::json {
@@ -82,16 +82,14 @@ void fromJson(const nlohmann::json& json, AssignIpDto& dto) {
     dto.ipAddresses.reserve(ipAddresses.size());
 
     for (const nlohmann::json& item : ipAddresses) {
-        IpAddressDto ipAddress {};
-        fromJson(item, ipAddress);
-        dto.ipAddresses.push_back(std::move(ipAddress));
+        dto.ipAddresses.push_back(item);
     }
 }
 
 nlohmann::json toJson(const TerminateIpDto& dto) {
     nlohmann::json ipAddresses = nlohmann::json::array();
-    for (const IpAddressDto& ipAddress : dto.ipAddresses) {
-        ipAddresses.push_back(toJson(ipAddress));
+    for (const std::string& ipAddress : dto.ipAddresses) {
+        ipAddresses.push_back(ipAddress);
     }
 
     return nlohmann::json {
@@ -107,9 +105,7 @@ void fromJson(const nlohmann::json& json, TerminateIpDto& dto) {
     dto.ipAddresses.reserve(ipAddresses.size());
 
     for (const nlohmann::json& item : ipAddresses) {
-        IpAddressDto ipAddress {};
-        fromJson(item, ipAddress);
-        dto.ipAddresses.push_back(std::move(ipAddress));
+        dto.ipAddresses.push_back(item);
     }
 }
 

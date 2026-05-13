@@ -23,12 +23,27 @@ curl -i -X POST http://localhost:8080/ip-inventory/reserve-ip \
     "ipType": "IPv4"
   }'
 
+# Curl for ip assign
+curl -i -X POST http://localhost:8080/ip-inventory/assign-ip-serviceId \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "serviceId": "service-a",
+    "ipType": "IPv4"
+  }'
+
 # Curl for change service id
 curl -i -X POST http://localhost:8080/ip-inventory/serviceId-change \
   -H 'Content-Type: application/json' \
   -d '{
-    "serviceIdOld": "service-b",
-    "serviceId": "service-a"
+    "serviceId": "xxxyyy",
+    "ipAddresses": [
+      {
+        "ip": "95.44.73.19"
+      },
+      {
+        "ip": "2a01:05a9:01a4:095c:0000:0000:0000:0001"
+      }
+    ]
   }'
 
 # Curl for the docs endpoint
