@@ -58,6 +58,17 @@ bool parseIpV6(IpAddress& address) {
     return true;
 }
 
+bool parseIpAddress(IpAddress& address) {
+    switch (address.type) {
+        case IpType::IPv4:
+            return parseIpV4(address);
+        case IpType::IPv6:
+            return parseIpV6(address);
+    }
+
+    return false;
+}
+
 //======================================================================================================================
 // Internal helper functions
 //======================================================================================================================

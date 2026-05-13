@@ -30,6 +30,8 @@ void setJsonResponse(httplib::Response& response, HttpStatusCode status, const j
 template <typename T>
 bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error);
 
+// TODO: Move the dto parsing code into some other component to reduce the code in the handlers.
+
 bool parseIpAddressDtos(
     const std::vector<IpAddressDto>& dtoAddresses,
     std::vector<IpAddress>& addresses,
@@ -295,6 +297,10 @@ bool parseIpAddressDtos(
         address.str = ipAddressDto.ip;
         if (!parseIpType(ipAddressDto.ipType, address.type)) {
             error = std::format("Invalid ipType: {}", ipAddressDto.ipType);
+            return false;
+        }
+        if (!parseIpAddress(address)) {
+            error = std::format("Invalid IP address for declared ipType: {}", ipAddressDto.ip);
             return false;
         }
 

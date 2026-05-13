@@ -17,7 +17,7 @@ i32 main() {
     cfg.dropCreateDbOnStart = false;
     cfg.port = 8080;
     cfg.serverThreadCount = concurrency > 0 ? concurrency : 1;
-    cfg.gcIntervalSeconds = 60;
+    cfg.gcIntervalSeconds = 60 * 60;
     cfg.reservationExpirationSeconds = 10;
 
     App app = App::create(std::move(cfg));

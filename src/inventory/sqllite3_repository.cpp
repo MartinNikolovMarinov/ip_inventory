@@ -134,9 +134,11 @@ InventoryStatus IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<I
         insertStm.clearBindings();
     }
 
+    const i32 updated = sqlite3_changes(m_db);
+
     tx.commit();
 
-    std::cout << "Add IP addresses transaction successfull" << std::endl;
+    std::cout << "Added " << updated << " ip addresses" << std::endl;
 
     return InventoryStatus::OkStatus();
 }
@@ -195,9 +197,11 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
         ret.reservedIps.push_back(std::move(ipv6));
     }
 
+    const i32 updated = sqlite3_changes(m_db);
+
     tx.commit();
 
-    std::cout << "Reserve request finished successfully" << std::endl;
+    std::cout << "Reserved " << updated << " ip addresses" << std::endl;
 
     return ret;
 }

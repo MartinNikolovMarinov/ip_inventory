@@ -1,6 +1,8 @@
-# Curl for the /ip-inventory/ip-pool endpoint
+# Health check
+curl -i http://127.0.0.1:8080/health
 
-curl -X POST http://localhost:8080/ip-inventory/ip-pool \
+# Add IPs to the pool
+curl -i -X POST http://127.0.0.1:8080/ip-inventory/ip-pool \
   -H "Content-Type: application/json" \
   -d '{
     "ipAddresses": [
@@ -9,43 +11,54 @@ curl -X POST http://localhost:8080/ip-inventory/ip-pool \
         "ipType": "IPv4"
       },
       {
-        "ip": "2a01:05a9:01a4:095c:0000:0000:0000:0001",
+        "ip": "2a01:5a9:1a4:95c::1",
         "ipType": "IPv6"
       }
     ]
   }'
 
-# Curl for ip reserve
-curl -i -X POST http://localhost:8080/ip-inventory/reserve-ip \
-  -H 'Content-Type: application/json' \
+# Reserve an IPv4 address for a service
+curl -i -X POST http://127.0.0.1:8080/ip-inventory/reserve-ip \
+  -H "Content-Type: application/json" \
   -d '{
     "serviceId": "service-a",
     "ipType": "IPv4"
   }'
 
-# Curl for ip assign
-curl -i -X POST http://localhost:8080/ip-inventory/assign-ip-serviceId \
-  -H 'Content-Type: application/json' \
+# Assign IPs to a service
+curl -i -X POST http://127.0.0.1:8080/ip-inventory/assign-ip-serviceId \
+  -H "Content-Type: application/json" \
   -d '{
     "serviceId": "service-a",
-    "ipType": "IPv4"
-  }'
-
-# Curl for change service id
-curl -i -X POST http://localhost:8080/ip-inventory/serviceId-change \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "serviceId": "xxxyyy",
     "ipAddresses": [
-      {
-        "ip": "95.44.73.19"
-      },
-      {
-        "ip": "2a01:05a9:01a4:095c:0000:0000:0000:0001"
-      }
+      "95.44.73.19",
+      "2a01:5a9:1a4:95c::1"
     ]
   }'
 
-# Curl for the docs endpoint
+# Get IPs assigned to a service
+curl -i "http://127.0.0.1:8080/ip-inventory/serviceId?serviceId=service-a"
 
+# Change a service id
+curl -i -X POST http://127.0.0.1:8080/ip-inventory/serviceId-change \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serviceIdOld": "service-a",
+    "serviceId": "service-b"
+  }'
+
+# Terminate an IP assignment
+curl -i -X POST http://127.0.0.1:8080/ip-inventory/terminate-ip-serviceId \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serviceId": "service-b",
+    "ipAddresses": [
+      "95.44.73.19"
+    ]
+  }'
+
+# Check the docs endpoint
 curl -sS -I http://127.0.0.1:8080/docs
+
+# Check the OpenAPI spec endpoint
+curl -sS -I http://127.0.0.1:8080/openapi.yaml
