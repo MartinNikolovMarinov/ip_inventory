@@ -3,6 +3,7 @@
 #include "types.h"
 
 #include <string>
+#include <vector>
 
 namespace ip_inv {
 
@@ -72,6 +73,28 @@ struct InventoryStatus {
 
     [[nodiscard]] bool success() const noexcept {
         return error == InventoryError::None;
+    }
+
+    static constexpr inline InventoryStatus OkStatus() {
+        return InventoryStatus {};
+    }
+};
+
+struct ReserveIpResult {
+    InventoryStatus status;
+    std::vector<IpAddress> reservedIps;
+
+    [[nodiscard]] bool success() const noexcept {
+        return status.success();
+    }
+};
+
+struct ServiceIpsResult {
+    InventoryStatus status;
+    std::vector<IpAddress> serviceIps;
+
+    [[nodiscard]] bool success() const noexcept {
+        return status.success();
     }
 };
 

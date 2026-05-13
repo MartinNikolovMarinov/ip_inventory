@@ -1,5 +1,6 @@
 #pragma once
 
+#include "inventory/inventory_types.h"
 #include "inventory/repository.h"
 
 #include <filesystem>
@@ -17,13 +18,30 @@ public:
 
     void initializeDb(bool dropCreate = false, std::filesystem::path schemaInitScriptPath = {}) override;
 
-    [[nodiscard]] AddToPoolResult addIpAddresses(const std::vector<IpAddress>& addresses) override;
+    [[nodiscard]] InventoryStatus addIpAddresses(const std::vector<IpAddress>& addresses) override;
 
     [[nodiscard]] ReserveIpResult reserveIpAddress(
         const std::string& serviceId,
         IpTypeSelection ipTypeSection,
         i64 expirationTime
     ) override;
+
+    [[nodiscard]] InventoryStatus assignIpAddress(
+        const std::string& serviceId,
+        std::vector<IpAddress>&& addresses
+    ) override;
+
+    [[nodiscard]] InventoryStatus terminateIpAssignment(
+        const std::string& serviceId,
+        std::vector<IpAddress>&& addresses
+    ) override;
+
+    [[nodiscard]] virtual InventoryStatus changeServiceId(
+        const std::string& servideIdOld,
+        const std::string& serviceIdNew
+    ) override;
+
+    [[nodiscard]] virtual ServiceIpsResult getAssignedIpsForService(const std::string& servideId) override;
 
     void clearExpiredReservations() override;
 

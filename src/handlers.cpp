@@ -2,7 +2,6 @@
 
 #include "dtos.h"
 #include "inventory/inventory_types.h"
-#include "inventory/repository.h"
 #include "str_utils.h"
 #include "types.h"
 
@@ -10,6 +9,7 @@
 
 #include <exception>
 #include <format>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -29,9 +29,13 @@ void setJsonResponse(httplib::Response& response, HttpStatusCode status, const j
 template <typename T>
 bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error);
 
-bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addresses, std::string& error);
+bool toDomainIpAddresses(
+    const std::vector<IpAddressDto>& dtoAddresses,
+    std::vector<IpAddress>& addresses,
+    std::string& error
+);
 
-IpAddressesDto toDtoIpAddress(const ReserveIpResult& result);
+IpAddressesDto toDtoIpAddress(const std::vector<IpAddress>& reservedIps);
 
 } // namespace
 
@@ -48,18 +52,18 @@ void addIpPoolHandler(IpInventoryService& inventoryService, const httplib::Reque
     }
 
     std::vector<IpAddress> addresses;
-    if (!toDomainIpAddresses(requestDto, addresses, error)) {
+    if (!toDomainIpAddresses(requestDto.ipAddresses, addresses, error)) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
         return;
     }
 
-    AddToPoolResult result = inventoryService.addIpAddresses(std::move(addresses));
+    auto result = inventoryService.addIpAddresses(std::move(addresses));
     if (!result.success()) {
-        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.detail)));
         return;
     }
 
-    setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", "Successful operation. OK")));
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", SUCCESSFULL_OPERATION_MSG)));
 }
 
 void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
@@ -70,43 +74,120 @@ void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Reque
         return;
     }
 
-    IpTypeSelection ipTypeSection;
-    if (!parseIpTypeSelection(requestDto.ipType, ipTypeSection)) {
+    IpTypeSelection ipTypeSelection;
+    if (!parseIpTypeSelection(requestDto.ipType, ipTypeSelection)) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", "Failed to parse ip type")));
         return;
     }
 
-    ReserveIpResult result = inventoryService.reserveIpAddress(requestDto.serviceId, ipTypeSection);
+    auto result = inventoryService.reserveIpAddress(requestDto.serviceId, ipTypeSelection);
     if (!result.success()) {
         setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
         return;
     }
 
-    IpAddressesDto responseDto = toDtoIpAddress(result);
+    IpAddressesDto responseDto = toDtoIpAddress(result.reservedIps);
     setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
 }
 
-void assignIpServiceIdHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
-    throw std::runtime_error("assign-ip-serviceId handler not implemented");
+void assignIpServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
+    AssignIpDto requestDto {};
+    std::string error;
+    if (!parseJsonRequest(req, requestDto, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    std::vector<IpAddress> addresses;
+    if (!toDomainIpAddresses(requestDto.ipAddresses, addresses, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    auto result = inventoryService.assignIpAddress(requestDto.serviceId, std::move(addresses));
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.detail)));
+        return;
+    }
+
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", SUCCESSFULL_OPERATION_MSG)));
 }
 
-void terminateIpServiceIdHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
-    throw std::runtime_error("terminate-ip-serviceId handler not implemented");
+void terminateIpServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
+    TerminateIpDto requestDto {};
+    std::string error;
+    if (!parseJsonRequest(req, requestDto, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    std::vector<IpAddress> addresses;
+    if (!toDomainIpAddresses(requestDto.ipAddresses, addresses, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    auto result = inventoryService.terminateIpAssignment(requestDto.serviceId, std::move(addresses));
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.detail)));
+        return;
+    }
+
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", SUCCESSFULL_OPERATION_MSG)));
 }
 
-void serviceIdChangeHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
-    throw std::runtime_error("serviceId-change handler not implemented");
+void serviceIdChangeHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
+    ChangeServiceDto requestDto {};
+    std::string error;
+    if (!parseJsonRequest(req, requestDto, error)) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", error)));
+        return;
+    }
+
+    auto result = inventoryService.changeServiceId(requestDto.serviceIdOld, requestDto.serviceId);
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.detail)));
+        return;
+    }
+
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(statusResponse("0", SUCCESSFULL_OPERATION_MSG)));
 }
 
-void getServiceIdHandler(IpInventoryService&, const httplib::Request&, httplib::Response&) {
-    throw std::runtime_error("serviceId handler not implemented");
+void getServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res) {
+    if (!req.has_param("serviceId")) {
+        setJsonResponse(
+            res,
+            HttpStatusCode::BadRequest,
+            toJson(statusResponse("1", "Missing serviceId query parameter"))
+        );
+        return;
+    }
+
+    const std::string serviceId = req.get_param_value("serviceId");
+
+    if (serviceId.empty()) {
+        setJsonResponse(
+            res,
+            HttpStatusCode::BadRequest,
+            toJson(statusResponse("1", "serviceId cannot be empty"))
+        );
+        return;
+    }
+
+    auto result = inventoryService.getAssignedIpsForService(serviceId);
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
+        return;
+    }
+
+    IpAddressesDto responseDto = toDtoIpAddress(result.serviceIps);
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
 }
 
-void serveFileHandler(const char* path, const char* contentType, httplib::Response& response) {
+void serveFileHandler(const char* path, const char* contentType, httplib::Response& res) {
     std::ifstream file(path, std::ios::binary);
     if (!file) {
-        response.status = i32(HttpStatusCode::NotFound);
-        response.set_content(R"({"status":"not found"})", "application/json");
+        setJsonResponse(res, HttpStatusCode::NotFound, toJson(statusResponse("1", FILE_NOT_FOUND_MSG)));
         return;
     }
 
@@ -115,7 +196,7 @@ void serveFileHandler(const char* path, const char* contentType, httplib::Respon
         std::istreambuf_iterator<char>()
     );
 
-    response.set_content(std::move(content), contentType);
+    res.set_content(std::move(content), contentType);
 }
 
 //======================================================================================================================
@@ -191,14 +272,18 @@ bool parseJsonRequest(const httplib::Request& req, T& dto, std::string& error) {
     return true;
 }
 
-bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addresses, std::string& error) {
-    if (dto.ipAddresses.empty()) {
+bool toDomainIpAddresses(
+    const std::vector<IpAddressDto>& dtoAddresses,
+    std::vector<IpAddress>& addresses,
+    std::string& error
+) {
+    if (dtoAddresses.empty()) {
         error = "Request field 'ipAddresses' must be a non-empty array";
         return false;
     }
 
-    addresses.reserve(dto.ipAddresses.size());
-    for (const IpAddressDto& ipAddressDto : dto.ipAddresses) {
+    addresses.reserve(dtoAddresses.size());
+    for (const IpAddressDto& ipAddressDto : dtoAddresses) {
         IpAddress address {};
         address.str = ipAddressDto.ip;
         if (!parseIpType(ipAddressDto.ipType, address.type)) {
@@ -212,11 +297,11 @@ bool toDomainIpAddresses(const IpAddressesDto& dto, std::vector<IpAddress>& addr
     return true;
 }
 
-IpAddressesDto toDtoIpAddress(const ReserveIpResult& result) {
+IpAddressesDto toDtoIpAddress(const std::vector<IpAddress>& reservedIps) {
     IpAddressesDto responseDto;
-    responseDto.ipAddresses.reserve(result.reservedIps.size());
+    responseDto.ipAddresses.reserve(reservedIps.size());
 
-    for (const auto& addr : result.reservedIps) {
+    for (const auto& addr : reservedIps) {
         IpAddressDto dto;
 
         dto.ip = addr.str;

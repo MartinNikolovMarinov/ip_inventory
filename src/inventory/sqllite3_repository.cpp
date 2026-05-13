@@ -92,15 +92,14 @@ void IpInventoryRepositorySqlLite::initializeDb(bool dropCreate, std::filesystem
     std::cout << "SQL LITE database intialized successfully" << std::endl;
 }
 
-AddToPoolResult IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<IpAddress>& addresses) {
-    AddToPoolResult ret;
-
+InventoryStatus IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<IpAddress>& addresses) {
     std::lock_guard lock(m_dbMutex);
 
     if (m_db == nullptr) {
-        ret.status.error = InventoryError::DbNotInitialized;
-        ret.status.detail = "Failed to add ip address; reason: database is not initialized";
-        return ret;
+        InventoryStatus status;
+        status.error = InventoryError::DbNotInitialized;
+        status.detail = "Failed to add ip address; reason: database is not initialized";
+        return status;
     }
 
     std::cout << "Add IP addresses transaction started" << std::endl;
@@ -138,7 +137,7 @@ AddToPoolResult IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<I
 
     std::cout << "Add IP addresses transaction successfull" << std::endl;
 
-    return ret;
+    return InventoryStatus::OkStatus();
 }
 
 ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
@@ -158,7 +157,6 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
 
     bool ipv4IsRequested = ipTypeSelection == IpTypeSelection::IPv4 || ipTypeSelection == IpTypeSelection::Both;
     bool ipv6IsRequested = ipTypeSelection == IpTypeSelection::IPv6 || ipTypeSelection == IpTypeSelection::Both;
-
 
     IpAddress ipv4;
     if (ipv4IsRequested) {
@@ -199,6 +197,77 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     tx.commit();
 
     std::cout << "Reserve request finished successfully" << std::endl;
+
+    return ret;
+}
+
+InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(const std::string& serviceId, std::vector<IpAddress>&& addresses) {
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        InventoryStatus status;
+        status.error = InventoryError::DbNotInitialized;
+        status.detail = "Failed to assign IP address; reason: database is not initialized";
+        return status;
+    }
+
+    // TODO: implement assignment.
+    (void)serviceId;
+    (void)addresses;
+
+    return InventoryStatus::OkStatus();
+}
+
+InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(const std::string& serviceId, std::vector<IpAddress>&& addresses) {
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        InventoryStatus status;
+        status.error = InventoryError::DbNotInitialized;
+        status.detail = "Failed to terminate IP address; reason: database is not initialized";
+        return status;
+    }
+
+    // TODO: implement terminate.
+    (void)serviceId;
+    (void)addresses;
+
+    return InventoryStatus::OkStatus();
+}
+
+InventoryStatus IpInventoryRepositorySqlLite::changeServiceId(
+    const std::string& servideIdOld,
+    const std::string& serviceIdNew
+) {
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        InventoryStatus status;
+        status.error = InventoryError::DbNotInitialized;
+        status.detail = "Failed to change service id; reason: database is not initialized";
+        return status;
+    }
+
+    // TODO: implement change service id.
+    (void)servideIdOld;
+    (void)serviceIdNew;
+
+    return InventoryStatus::OkStatus();
+}
+
+ServiceIpsResult IpInventoryRepositorySqlLite::getAssignedIpsForService(const std::string& servideId) {
+    ServiceIpsResult ret;
+
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        ret.status.error = InventoryError::DbNotInitialized;
+        ret.status.detail = "Failed to change service id; reason: database is not initialized";
+        return ret;
+    }
+
+    // TODO: implement get assigned ips for service.
+    (void)servideId;
 
     return ret;
 }

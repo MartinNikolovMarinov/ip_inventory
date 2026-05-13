@@ -1,18 +1,29 @@
 #pragma once
 
 #include "inventory/inventory_types.h"
-#include "inventory/repository.h"
 
 #include <memory>
 
 namespace ip_inv {
 
+class IpInventoryRepository;
+
 class IpInventoryService {
 public:
     explicit IpInventoryService(std::unique_ptr<IpInventoryRepository> repository, usize reservationExpirationSeconds);
 
-    [[nodiscard]] AddToPoolResult addIpAddresses(std::vector<IpAddress>&& addresses);
+    [[nodiscard]] InventoryStatus addIpAddresses(std::vector<IpAddress>&& addresses);
     [[nodiscard]] ReserveIpResult reserveIpAddress(const std::string& serviceId, IpTypeSelection ipTypeSelection);
+    [[nodiscard]] InventoryStatus assignIpAddress(
+        const std::string& serviceId,
+        std::vector<IpAddress>&& addresses
+    );
+    [[nodiscard]] InventoryStatus terminateIpAssignment(
+        const std::string& serviceId,
+        std::vector<IpAddress>&& addresses
+    );
+    [[nodiscard]] InventoryStatus changeServiceId(const std::string& servideIdOld, const std::string& serviceIdNew);
+    [[nodiscard]] ServiceIpsResult getAssignedIpsForService(const std::string& servideId);
 
     void clearExpiredReservations();
 

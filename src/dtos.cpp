@@ -115,13 +115,13 @@ void fromJson(const nlohmann::json& json, TerminateIpDto& dto) {
 
 nlohmann::json toJson(const ChangeServiceDto& dto) {
     return nlohmann::json {
-        {"serviceIdOld", dto.serviceOld},
+        {"serviceIdOld", dto.serviceIdOld},
         {"serviceId", dto.serviceId},
     };
 }
 
 void fromJson(const nlohmann::json& json, ChangeServiceDto& dto) {
-    json.at("serviceIdOld").get_to(dto.serviceOld);
+    json.at("serviceIdOld").get_to(dto.serviceIdOld);
     json.at("serviceId").get_to(dto.serviceId);
 }
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "types.h"
-
 #include <nlohmann/json.hpp>
 
 #include <string>
@@ -39,13 +37,9 @@ struct TerminateIpDto {
 };
 
 struct ChangeServiceDto {
-    std::string serviceOld;
+    std::string serviceIdOld;
     std::string serviceId;
 };
-
-constexpr inline StatusResponseDto statusResponse(std::string statusCode, std::string statusMessage) {
-    return StatusResponseDto { std::move(statusCode), std::move(statusMessage) };
-}
 
 [[nodiscard]] nlohmann::json toJson(const IpAddressDto& dto);
 void fromJson(const nlohmann::json& json, IpAddressDto& dto);
@@ -67,5 +61,12 @@ void fromJson(const nlohmann::json& json, TerminateIpDto& dto);
 
 [[nodiscard]] nlohmann::json toJson(const ChangeServiceDto& dto);
 void fromJson(const nlohmann::json& json, ChangeServiceDto& dto);
+
+constexpr inline StatusResponseDto statusResponse(std::string statusCode, std::string statusMessage) {
+    return StatusResponseDto { std::move(statusCode), std::move(statusMessage) };
+}
+
+constexpr const char* SUCCESSFULL_OPERATION_MSG = "Successful operation. OK";
+constexpr const char* FILE_NOT_FOUND_MSG = "file not found";
 
 } // namespace ip_inv

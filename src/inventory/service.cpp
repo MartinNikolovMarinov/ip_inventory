@@ -1,16 +1,18 @@
 #include "inventory/inventory_types.h"
-#include "ip_utils.h"
-
 #include "inventory/repository.h"
 #include "inventory/service.h"
 
+#include "ip_utils.h"
+
 #include <chrono>
+
+// TODO: Implement a strict validation layer for the input arguments.
 
 namespace ip_inv {
 
 namespace {
 
-AddToPoolResult parseIpAddresses(std::vector<IpAddress>& addresses);
+InventoryStatus parseIpAddresses(std::vector<IpAddress>& addresses);
 
 } // namespace
 
@@ -22,11 +24,11 @@ IpInventoryService::IpInventoryService(std::unique_ptr<IpInventoryRepository> re
 // PUBLIC
 //======================================================================================================================
 
-AddToPoolResult IpInventoryService::addIpAddresses(std::vector<IpAddress>&& addresses) {
-    AddToPoolResult result = parseIpAddresses(addresses);
+InventoryStatus IpInventoryService::addIpAddresses(std::vector<IpAddress>&& addresses) {
+    InventoryStatus parseResult = parseIpAddresses(addresses);
 
-    if (!result.success()) {
-        return result;
+    if (!parseResult.success()) {
+        return parseResult;
     }
 
     return m_repository->addIpAddresses(std::move(addresses));
@@ -34,9 +36,36 @@ AddToPoolResult IpInventoryService::addIpAddresses(std::vector<IpAddress>&& addr
 
 ReserveIpResult IpInventoryService::reserveIpAddress(const std::string& serviceId, IpTypeSelection ipTypeSelection) {
     using namespace std::chrono;
-    ReserveIpResult result;
     const i64 expirationTime = i64(system_clock::to_time_t(system_clock::now() + seconds(m_reservationExpirationSeconds)));
     return m_repository->reserveIpAddress(serviceId, ipTypeSelection, expirationTime);
+}
+
+InventoryStatus IpInventoryService::assignIpAddress(const std::string& serviceId, std::vector<IpAddress>&& addresses) {
+    InventoryStatus parseResult = parseIpAddresses(addresses);
+
+    if (!parseResult.success()) {
+        return parseResult;
+    }
+
+    return m_repository->assignIpAddress(serviceId, std::move(addresses));
+}
+
+InventoryStatus IpInventoryService::terminateIpAssignment(const std::string& serviceId, std::vector<IpAddress>&& addresses) {
+    InventoryStatus parseResult = parseIpAddresses(addresses);
+
+    if (!parseResult.success()) {
+        return parseResult;
+    }
+
+    return m_repository->terminateIpAssignment(serviceId, std::move(addresses));
+}
+
+InventoryStatus IpInventoryService::changeServiceId(const std::string& servideIdOld, const std::string& serviceIdNew) {
+    return m_repository->changeServiceId(servideIdOld, serviceIdNew);
+}
+
+ServiceIpsResult IpInventoryService::getAssignedIpsForService(const std::string& servideId) {
+    return m_repository->getAssignedIpsForService(servideId);
 }
 
 void IpInventoryService::clearExpiredReservations() {
@@ -49,13 +78,13 @@ void IpInventoryService::clearExpiredReservations() {
 
 namespace {
 
-AddToPoolResult parseIpAddresses(std::vector<IpAddress>& addresses) {
-    AddToPoolResult result;
+InventoryStatus parseIpAddresses(std::vector<IpAddress>& addresses) {
+    InventoryStatus status;
 
     if (addresses.empty()) {
-        result.status.error = InventoryError::EmptyInput;
-        result.status.detail = "Failed to add ip address; reason: empty input addresses list";
-        return result;
+        status.error = InventoryError::EmptyInput;
+        status.detail = "Failed to add ip address; reason: empty input addresses list";
+        return status;
     }
 
     for (auto& address : addresses) {
@@ -70,12 +99,12 @@ AddToPoolResult parseIpAddresses(std::vector<IpAddress>& addresses) {
         }
 
         if (!isParseOk) {
-            result.status.error = InventoryError::InvalidIp;
-            result.status.detail = "Failed to add ip address; reason: invalid ip for declared type";
+            status.error = InventoryError::InvalidIp;
+            status.detail = "Failed to add ip address; reason: invalid ip for declared type";
         }
     }
 
-    return result;
+    return status;
 }
 
 } // namespace
