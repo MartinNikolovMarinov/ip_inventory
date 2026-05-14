@@ -41,6 +41,8 @@ void assignIpAddressQuery(sqlite3* db, const IpAddress& address, i64 serviceDbId
 void createServiceQuery(sqlite3* db, const std::string& serviceId);
 [[nodiscard]] i64 findServiceDbIdQuery(sqlite3* db, const std::string& serviceId);
 
+[[nodiscard]] bool isAssignedFor(sqlite3* db, i64 serviceDbId, const IpAddress& address);
+void terminateAssignment(sqlite3* db, i64 serviceDbId, const IpAddress& address);
 
 } // namespace
 
@@ -307,34 +309,28 @@ InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(
 
     SqliteTransaction tx (m_db);
 
-    SqliteStatement terminateAssignmentStm(
-        m_db,
-        R"sql(
-            UPDATE ip_pool
-            SET assigned_id = NULL
-            WHERE assigned_id = ?
-                AND ip_type = ?
-                AND ip_bytes = ?
-        )sql"
-    );
-
     i32 terminatedCount = 0;
 
     for (const IpAddress& address : addresses) {
-        terminateAssignmentStm.bindInt64(1, serviceDbId);
-        terminateAssignmentStm.bindInt(2, i32(address.type));
-        terminateAssignmentStm.bindBlob(3, address.bytes, address.byteCount(address.type));
-
-        terminateAssignmentStm.execute();
-
-        const i32 updated = sqlite3_changes(m_db);
-        if (updated != 1) {
-            throw std::runtime_error("failed to terminate requested IP assignment");
+        if (!isIpAddressAvailableQuery(m_db, address)) {
+            InventoryStatus status;
+            status.error = InventoryError::IpNotAvailable;
+            status.detail = std::format(
+                "Failed to terminate IP address; reason: the ip {} is not available",
+                address.str
+            );
+            return status;
         }
-
-        terminateAssignmentStm.reset();
-        terminateAssignmentStm.clearBindings();
-
+        if (!isAssignedFor(m_db, serviceDbId, address)) {
+            InventoryStatus status;
+            status.error = InventoryError::IpIsAssignedForDifferentService;
+            status.detail = std::format(
+                "Failed to terminate IP address; reason: the ip {} is reserved for another service",
+                address.str
+            );
+            return status;
+        }
+        terminateAssignment(m_db, serviceDbId, address);
         terminatedCount++;
     }
 
@@ -722,6 +718,58 @@ i64 findServiceDbIdQuery(sqlite3* db, const std::string& serviceId) {
 
     i64 ret = findServiceStm.columnInt64(0);
     return ret;
+}
+
+bool isAssignedFor(sqlite3* db, i64 serviceDbId, const IpAddress& address) {
+    SqliteStatement stmt(
+        db,
+        R"sql(
+            SELECT EXISTS(
+                SELECT 1
+                FROM ip_pool
+                WHERE assigned_id = ?
+                  AND ip_type = ?
+                  AND ip_bytes = ?
+            );
+        )sql"
+    );
+
+    stmt.bindInt64(1, serviceDbId);
+    stmt.bindInt(2, i32(address.type));
+    stmt.bindBlob(3, address.bytes, address.byteCount(address.type));
+
+    if (!stmt.stepRow()) {
+        return false;
+    }
+
+    return stmt.columnInt(0) != 0;
+}
+
+void terminateAssignment(sqlite3* db, i64 serviceDbId, const IpAddress& address) {
+    SqliteStatement terminateAssignmentStm(
+        db,
+        R"sql(
+            UPDATE ip_pool
+            SET assigned_id = NULL
+            WHERE assigned_id = ?
+                AND ip_type = ?
+                AND ip_bytes = ?
+        )sql"
+    );
+
+    terminateAssignmentStm.bindInt64(1, serviceDbId);
+    terminateAssignmentStm.bindInt(2, i32(address.type));
+    terminateAssignmentStm.bindBlob(3, address.bytes, address.byteCount(address.type));
+
+    terminateAssignmentStm.execute();
+
+    const i32 updated = sqlite3_changes(db);
+    if (updated != 1) {
+        throw std::runtime_error("failed to terminate requested IP assignment");
+    }
+
+    terminateAssignmentStm.reset();
+    terminateAssignmentStm.clearBindings();
 }
 
 } // namespace
