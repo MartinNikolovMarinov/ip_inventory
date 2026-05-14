@@ -13,11 +13,17 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <sys/types.h>
 #include <utility>
 
 namespace ip_inv {
 
 namespace {
+
+struct Reservation {
+    i64 reservedId;
+    i64 serviceDbId;
+};
 
 std::filesystem::path sqliteDatabaseRoot();
 std::filesystem::path sqliteDatabasePath(const std::string& databaseName);
@@ -26,11 +32,15 @@ std::string readTextFile(const std::filesystem::path& path);
 
 void execSqlScriptFromFile(sqlite3* db, const std::filesystem::path& path);
 
+[[nodiscard]] bool isIpAddressAvailableQuery(sqlite3* db, const IpAddress& address);
 [[nodiscard]] bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out);
+[[nodiscard]] bool findIpAddressReservationQuery(sqlite3* db, const IpAddress& address, Reservation& out);
 void reserveIpAddressQuery(sqlite3* db, i64 serviceDbId, i64 expirationTime, const IpAddress& address);
+void assignIpAddressQuery(sqlite3* db, const IpAddress& address, i64 serviceDbId, i64 reservationId);
+
 void createServiceQuery(sqlite3* db, const std::string& serviceId);
-i64 findServicePrimaryKeyQuery(sqlite3* db, const std::string& serviceId);
-bool doesServiceExistQuery(sqlite3* db, const std::string& serviceId);
+[[nodiscard]] i64 findServiceDbIdQuery(sqlite3* db, const std::string& serviceId);
+
 
 } // namespace
 
@@ -186,7 +196,10 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     }
 
     createServiceQuery(m_db, serviceId);
-    i64 serviceDbId = findServicePrimaryKeyQuery(m_db, serviceId);
+    i64 serviceDbId = findServiceDbIdQuery(m_db, serviceId);
+    if (serviceDbId < 0) {
+        throw std::runtime_error("Failed to read service that should have been created just now");
+    }
 
     if (ipv4IsRequested) {
         reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv4);
@@ -206,7 +219,10 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     return ret;
 }
 
-InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(const std::string& serviceId, std::vector<IpAddress>&& addresses) {
+InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(
+    const std::string& serviceId,
+    std::vector<IpAddress>&& addresses
+) {
     std::lock_guard lock(m_dbMutex);
 
     if (m_db == nullptr) {
@@ -216,9 +232,54 @@ InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(const std::string&
         return status;
     }
 
-    // TODO: implement assignment.
-    (void)serviceId;
-    (void)addresses;
+    SqliteTransaction tx (m_db);
+
+    i64 serviceDbId = findServiceDbIdQuery(m_db, serviceId);
+    if (serviceDbId < 0) {
+        InventoryStatus status;
+        status.error = InventoryError::ServiceNotFound;
+        status.detail = "Failed to assign IP address; reason: service not found";
+        return status;
+    }
+
+    for (const auto& address : addresses) {
+        Reservation reservation;
+
+        if (!isIpAddressAvailableQuery(m_db, addresses[0])) {
+            InventoryStatus status;
+            status.error = InventoryError::IpNotAvailable;
+            status.detail = std::format(
+                "Failed to assign IP address; reason: ip address {} is not available",
+                addresses[0].str
+            );
+            return status;
+        }
+
+        if (!findIpAddressReservationQuery(m_db, addresses[0], reservation)) {
+            InventoryStatus status;
+            status.error = InventoryError::IpNotReserved;
+            status.detail = std::format(
+                "Failed to assign IP address; reason: ip address {} not reserved",
+                addresses[0].str
+            );
+            return status;
+        }
+
+        if (reservation.serviceDbId != serviceDbId) {
+            InventoryStatus status;
+            status.error = InventoryError::IpReservedForDifferentService;
+            status.detail = std::format(
+                "Failed to assign IP address; reason: ip address {} reserved for a differnet service",
+                addresses[0].str
+            );
+            return status;
+        }
+
+        assignIpAddressQuery(m_db, addresses[0], serviceDbId, reservation.reservedId);
+        std::cout << "Assigned IP " << addresses[0].str << " for service " << serviceId;
+    }
+
+    tx.commit();
 
     return InventoryStatus::OkStatus();
 }
@@ -255,7 +316,7 @@ InventoryStatus IpInventoryRepositorySqlLite::changeServiceId(
 
     SqliteTransaction tx (m_db);
 
-    if (!doesServiceExistQuery(m_db, serviceIdOld)) {
+    if (findServiceDbIdQuery(m_db, serviceIdOld) < 0) {
         InventoryStatus status;
         status.error = InventoryError::ServiceNotFound;
         status.detail = std::format(
@@ -418,67 +479,65 @@ void reserveIpAddressQuery(sqlite3* db, i64 serviceDbId, i64 expirationTime, con
     }
 }
 
-void createServiceQuery(sqlite3* db, const std::string& serviceId) {
-    SqliteStatement insertServiceStm(
+void assignIpAddressQuery(sqlite3* db, const IpAddress& address, i64 serviceDbId, i64 reservationId) {
+    SqliteStatement dropReservationStm(
         db,
         R"sql(
-            INSERT INTO services (service_id)
-            VALUES (?)
-            ON CONFLICT(service_id) DO NOTHING;
+            DELETE FROM reserved_ips
+            WHERE id = ?
         )sql"
     );
 
-    insertServiceStm.bindText(1, serviceId);
-    insertServiceStm.execute();
-}
+    dropReservationStm.bindInt64(1, reservationId);
+    dropReservationStm.execute();
 
-i64 findServicePrimaryKeyQuery(sqlite3* db, const std::string& serviceId) {
-    SqliteStatement findServiceStm(
-        db,
-        R"sql(
-            SELECT id
-            FROM services
-            WHERE service_id = ?;
-        )sql"
-    );
-
-    findServiceStm.bindText(1, serviceId);
-
-    if (!findServiceStm.stepRow()) {
-        throw std::runtime_error("failed to resolve service primary key");
+    i32 updated = sqlite3_changes(db);
+    if (updated != 1) {
+        throw std::runtime_error("failed to drop reservation");
     }
 
-    i64 ret = findServiceStm.columnInt64(0);
-    return ret;
-}
-
-bool doesServiceExistQuery(sqlite3* db, const std::string& serviceId) {
-    SqliteStatement findService(
+    SqliteStatement assignToServiceStm(
         db,
         R"sql(
-            SELECT service_id
-            FROM services
-            WHERE service_id = ?
+            UPDATE ip_pool
+            SET assigned_id = ?
+            WHERE ip_type = ? AND ip_bytes = ?
         )sql"
     );
 
-    findService.bindText(1, serviceId);
+    assignToServiceStm.bindInt64(1, serviceDbId);
+    assignToServiceStm.bindInt(2, i32(address.type));
+    assignToServiceStm.bindBlob(3, address.bytes, address.byteCount(address.type));
 
-    if (!findService.stepRow()) {
+    assignToServiceStm.execute();
+
+    updated = sqlite3_changes(db);
+    if (updated != 1) {
+        throw std::runtime_error("assignment failed to update ip_pool table");
+    }
+}
+
+bool isIpAddressAvailableQuery(sqlite3* db, const IpAddress& address) {
+    SqliteStatement findIpAddressStm(
+        db,
+        R"sql(
+            SELECT EXISTS(
+                SELECT 1
+                FROM ip_pool
+                WHERE ip_bytes = ? AND ip_type = ? AND assigned_id == NULL AND reserved_id == NULL
+            );
+        )sql"
+    );
+
+    findIpAddressStm.bindBlob(1, address.bytes, address.byteCount(address.type));
+    findIpAddressStm.bindInt(2, i32(address.type));
+
+    if (!findIpAddressStm.stepRow()) {
         return false;
     }
 
-    // If there is more than one row the db is inconsistent, because service_id has unique constraint set.
-    if (findService.stepRow()) {
-        throw std::runtime_error(
-            std::format(
-                "There are more than one service with id={}; database is inconsistent",
-                serviceId
-            )
-        );
-    }
-
-    return true;
+    i32 ret = findIpAddressStm.columnInt(0);
+    return ret != 0;
 }
 
 bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out) {
@@ -509,6 +568,89 @@ bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out) {
     out.type = type;
 
     return true;
+}
+
+bool findIpAddressReservationQuery(sqlite3* db, const IpAddress& address, Reservation& out) {
+    out = {};
+
+    SqliteStatement findReservationIdFromIpAddressStm(
+        db,
+        R"sql(
+            SELECT reserved_id
+            FROM ip_pool
+            WHERE ip_bytes = ? AND ip_type = ?
+        )sql"
+    );
+
+    findReservationIdFromIpAddressStm.bindBlob(1, address.bytes, address.byteCount(address.type));
+    findReservationIdFromIpAddressStm.bindInt(2, i32(address.type));
+
+    if (!findReservationIdFromIpAddressStm.stepRow()) {
+        return false;
+    }
+
+    if (findReservationIdFromIpAddressStm.columnIsNull(0)) {
+        // No reservation found
+        return false;
+    }
+
+    i64 reservedId = findReservationIdFromIpAddressStm.columnInt64(0);
+
+    SqliteStatement findReservedIpRecordStm(
+        db,
+        R"sql(
+            SELECT service_id
+            FROM reserved_ips
+            WHERE id = ?
+        )sql"
+    );
+
+    findReservedIpRecordStm.bindInt64(1, reservedId);
+
+    if (!findReservedIpRecordStm.stepRow()) {
+        return false;
+    }
+
+    i64 serviceDbId = findReservedIpRecordStm.columnInt64(0);
+
+    out.reservedId = reservedId;
+    out.serviceDbId = serviceDbId;
+
+    return true;
+}
+
+void createServiceQuery(sqlite3* db, const std::string& serviceId) {
+    SqliteStatement insertServiceStm(
+        db,
+        R"sql(
+            INSERT INTO services (service_id)
+            VALUES (?)
+            ON CONFLICT(service_id) DO NOTHING;
+        )sql"
+    );
+
+    insertServiceStm.bindText(1, serviceId);
+    insertServiceStm.execute();
+}
+
+i64 findServiceDbIdQuery(sqlite3* db, const std::string& serviceId) {
+    SqliteStatement findServiceStm(
+        db,
+        R"sql(
+            SELECT id
+            FROM services
+            WHERE service_id = ?;
+        )sql"
+    );
+
+    findServiceStm.bindText(1, serviceId);
+
+    if (!findServiceStm.stepRow()) {
+        return -1;
+    }
+
+    i64 ret = findServiceStm.columnInt64(0);
+    return ret;
 }
 
 } // namespace

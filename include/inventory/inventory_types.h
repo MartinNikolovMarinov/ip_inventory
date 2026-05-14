@@ -59,11 +59,11 @@ struct IpAddress {
 
 enum struct InventoryError {
     None,
+    IpNotAvailable,
     DbNotInitialized,
-    DbError,
-    InvalidIp,
-    EmptyInput,
     ServiceNotFound,
+    IpNotReserved,
+    IpReservedForDifferentService,
 
     IpUnavailable
 };

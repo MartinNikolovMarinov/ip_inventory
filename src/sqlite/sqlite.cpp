@@ -122,6 +122,10 @@ std::string SqliteStatement::columnText(i32 index) const {
     return text == nullptr ? std::string {} : reinterpret_cast<const char*>(text);
 }
 
+bool SqliteStatement::columnIsNull(i32 index) const {
+    return sqlite3_column_type(m_statement, index) == SQLITE_NULL;
+}
+
 void SqliteStatement::execute() {
     assertSqliteDone(sqlite3_step(m_statement), m_db, "execute statement");
 }

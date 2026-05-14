@@ -53,6 +53,8 @@ public:
     [[nodiscard]] i32 columnBytes(i32 index) const;
     [[nodiscard]] std::string columnText(i32 index) const;
 
+    [[nodiscard]] bool columnIsNull(i32 index) const;
+
     void execute();
     [[nodiscard]] bool stepRow();
     void reset();
