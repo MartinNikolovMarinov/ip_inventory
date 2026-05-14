@@ -15,6 +15,8 @@ std::filesystem::path g_databasePath;
 
 } // namespace
 
+// TODO: Extend the testing to cover more edge cases
+
 void setUp() {
     test::prepareDatabaseForTest(g_databaseName);
 }

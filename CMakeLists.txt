@@ -35,6 +35,11 @@ option(IP_INVENTORY_ASSERT_ENABLED "Asserts enabled." OFF)
 option(IP_INVENTORY_BUILD_TESTS "Build tests." OFF)
 option(IP_INVENTORY_CONFIGURED_FROM_PRESET "Configured from preset." OFF)
 set(IP_INVENTORY_SQLITE3_DB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/db" CACHE PATH "Directory for the SQLite database.")
+set(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS "" CACHE STRING "Reservation expiration in seconds. Leave empty to use the application default.")
+
+if(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS AND NOT IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS MATCHES "^[1-9][0-9]*$")
+    message(FATAL_ERROR "IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS must be empty or a positive integer")
+endif()
 
 log_info("---------------------------------------------")
 log_info("Version:                   ${PROJECT_VERSION}")
@@ -48,6 +53,11 @@ log_info("Debug:                     ${IP_INVENTORY_DEBUG}")
 log_info("Build Tests:               ${IP_INVENTORY_BUILD_TESTS}")
 log_info("Assert Enabled:            ${IP_INVENTORY_ASSERT_ENABLED}")
 log_info("SQLite3 DB Root:           ${IP_INVENTORY_SQLITE3_DB_ROOT}")
+if(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS)
+    log_info("Reservation Expiration:    ${IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS}s")
+else()
+    log_info("Reservation Expiration:    unset")
+endif()
 
 # ---------------------------------------- End Options -----------------------------------------------------------------
 
@@ -115,6 +125,12 @@ target_compile_definitions(ip_inventory PRIVATE
     IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" # TODO: The ip inventory directory is used for service static files, it should instead use the binary directory and copy dist there!! Same for schema sql.
     IP_INVENTORY_SQLITE3_DB_ROOT="${IP_INVENTORY_SQLITE3_DB_ROOT}"
 )
+
+if(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS)
+    target_compile_definitions(ip_inventory PRIVATE
+        IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS=${IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS}
+    )
+endif()
 
 target_set_default_c_flags(ip_inventory ${IP_INVENTORY_DEBUG})
 

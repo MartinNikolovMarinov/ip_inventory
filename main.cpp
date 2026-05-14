@@ -8,6 +8,18 @@ using namespace ip_inv;
 
 // TODO: add graceful shutdown on signal interupt.
 
+namespace {
+
+constexpr usize defaultReservationExpirationSeconds() {
+#if defined(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS)
+    return IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS;
+#else
+    return 20 * 60;
+#endif
+}
+
+} // namespace
+
 i32 main() {
     const u32 concurrency = std::thread::hardware_concurrency() / 2;
 
@@ -21,7 +33,9 @@ i32 main() {
     cfg.port = 8080;
     cfg.serverThreadCount = concurrency > 0 ? concurrency : 1;
     cfg.gcIntervalSeconds = 60 * 60;
-    cfg.reservationExpirationSeconds = 10;
+    cfg.reservationExpirationSeconds = defaultReservationExpirationSeconds();
+
+    std::cout << "Reservation expiration seconds = " << cfg.reservationExpirationSeconds << std::endl;
 
     App app = App::create(std::move(cfg));
     i32 returnCode = app.run();
