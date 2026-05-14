@@ -97,10 +97,10 @@ void IpInventoryRepositorySqlLite::initializeDb(bool dropCreate, std::filesystem
     assertSqliteOk(
         sqlite3_exec(m_db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr),
         m_db,
-        "Foreign keys much be enabled for every connection"
+        "Foreign keys must be enabled for every connection"
     );
 
-    std::cout << "SQL LITE database intialized successfully" << std::endl;
+    std::cout << "SQL LITE database initialized successfully" << std::endl;
 }
 
 InventoryStatus IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<IpAddress>& addresses) {
@@ -109,7 +109,7 @@ InventoryStatus IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<I
     if (m_db == nullptr) {
         InventoryStatus status;
         status.error = InventoryError::DbNotInitialized;
-        status.detail = "Failed to add ip address; reason: database is not initialized";
+        status.detail = "Failed to add ip addresses; reason: database is not initialized";
         return status;
     }
 
@@ -209,12 +209,12 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     if (ipv4IsRequested) {
         reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv4);
         ret.reservedIps.push_back(std::move(ipv4));
-        std::cout << "Reserved ipv4 addresses successfully" << std::endl;
+        std::cout << "Reserved ipv4 address successfully" << std::endl;
     }
     if (ipv6IsRequested) {
         reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv6);
         ret.reservedIps.push_back(std::move(ipv6));
-        std::cout << "Reserved ipv6 addresses successfully" << std::endl;
+        std::cout << "Reserved ipv6 address successfully" << std::endl;
     }
 
     tx.commit();
@@ -272,7 +272,7 @@ InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(
             InventoryStatus status;
             status.error = InventoryError::IpReservedForDifferentService;
             status.detail = std::format(
-                "Failed to assign IP address; reason: ip address {} reserved for a differnet service",
+                "Failed to assign IP address; reason: ip address {} reserved for a different service",
                 address.str
             );
             return status;
@@ -326,7 +326,7 @@ InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(
             InventoryStatus status;
             status.error = InventoryError::IpIsAssignedForDifferentService;
             status.detail = std::format(
-                "Failed to terminate IP address; reason: the ip {} is reserved for another service",
+                "Failed to terminate IP address; reason: the ip {} is assigned for another service",
                 address.str
             );
             return status;
@@ -418,14 +418,14 @@ ServiceIpsResult IpInventoryRepositorySqlLite::getAssignedIpsForService(const st
 
     if (m_db == nullptr) {
         ret.status.error = InventoryError::DbNotInitialized;
-        ret.status.detail = "Failed to get assigned ips for service; reason: database is not initialized";
+        ret.status.detail = "Failed to get assigned IPs for service; reason: database is not initialized";
         return ret;
     }
 
     i64 serviceDbId = findServiceDbIdQuery(m_db, serviceId);
     if (serviceDbId < 0) {
         ret.status.error = InventoryError::ServiceNotFound;
-        ret.status.detail = "Failed to get assigned ips for service; reason: service not found";
+        ret.status.detail = "Failed to get assigned IPs for service; reason: service not found";
         return ret;
     }
 
@@ -629,7 +629,7 @@ bool isIpAddressAvailableForAssignmentQuery(sqlite3* db, const IpAddress& addres
 }
 
 bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out) {
-    SqliteStatement findServiceStm(
+    SqliteStatement findAvailableIpStm(
         db,
         R"sql(
             SELECT ip_bytes, display_ip
@@ -641,18 +641,18 @@ bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out) {
         )sql"
     );
 
-    findServiceStm.bindInt(1, i32(type));
+    findAvailableIpStm.bindInt(1, i32(type));
 
-    if (!findServiceStm.stepRow()) {
+    if (!findAvailableIpStm.stepRow()) {
         // No available IP
         return false;
     }
 
-    const void* blob = findServiceStm.columnBlob(0);
-    int blobSize = findServiceStm.columnBytes(0);
+    const void* blob = findAvailableIpStm.columnBlob(0);
+    int blobSize = findAvailableIpStm.columnBytes(0);
 
     std::memcpy(out.bytes, blob, blobSize);
-    out.str = findServiceStm.columnText(1);
+    out.str = findAvailableIpStm.columnText(1);
     out.type = type;
 
     return true;
