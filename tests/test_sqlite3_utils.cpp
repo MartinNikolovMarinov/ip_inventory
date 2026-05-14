@@ -111,22 +111,24 @@ void clearTables(sqlite3* db) {
 
 std::vector<IpPoolRow> listIpPoolRows(const std::string& databaseName) {
     sqlite3* db = openTestDatabase(databaseName);
-
-    SqliteStatement stmt(
-        db,
-        R"sql(
-            SELECT ip_type, display_ip
-            FROM ip_pool
-            ORDER BY ip_type, display_ip
-        )sql"
-    );
-
     std::vector<IpPoolRow> rows;
-    while (stmt.stepRow()) {
-        IpPoolRow row;
-        row.ipType = stmt.columnInt(0);
-        row.displayIp = stmt.columnText(1);
-        rows.push_back(std::move(row));
+
+    {
+        SqliteStatement stmt(
+            db,
+            R"sql(
+                SELECT ip_type, display_ip
+                FROM ip_pool
+                ORDER BY ip_type, display_ip
+            )sql"
+        );
+
+        while (stmt.stepRow()) {
+            IpPoolRow row;
+            row.ipType = stmt.columnInt(0);
+            row.displayIp = stmt.columnText(1);
+            rows.push_back(std::move(row));
+        }
     }
 
     sqlite3_close(db);
