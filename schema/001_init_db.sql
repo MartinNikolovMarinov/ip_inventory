@@ -9,7 +9,7 @@ CREATE TABLE services (
 
 CREATE TABLE reserved_ips (
     id INTEGER PRIMARY KEY,
-    service_id INTEGER NOT NULL, -- TODO: add an index for this to speedup assignment
+    service_id INTEGER NOT NULL,
     expiration_time BIGINT NOT NULL,
 
     FOREIGN KEY (service_id)

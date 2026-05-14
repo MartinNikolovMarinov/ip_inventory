@@ -93,9 +93,6 @@ void IpInventoryRepositorySqlLite::initializeDb(bool dropCreate, std::filesystem
     if (dropCreate) {
         execSqlScriptFromFile(m_db, schemaInitScriptPath);
     }
-    else {
-        // TODO: there should be a check to validate weather the necessary tables exist, or some migration scripts might be ran as well.
-    }
 
     assertSqliteOk(
         sqlite3_exec(m_db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr),
@@ -282,7 +279,7 @@ InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(
         }
 
         assignIpAddressQuery(m_db, address, serviceDbId, reservation.reservedId);
-        std::cout << "Assigned IP " << address.str << " for service " << serviceId;
+        std::cout << "Assigned IP " << address.str << " for service " << serviceId << std::endl;
     }
 
     tx.commit();
