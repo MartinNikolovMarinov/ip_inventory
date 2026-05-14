@@ -56,6 +56,7 @@ struct IpAddress {
 
 enum struct InventoryError {
     None,
+    InvalidArgument,
     IpNotAvailable,
     DbNotInitialized,
     ServiceNotFound,

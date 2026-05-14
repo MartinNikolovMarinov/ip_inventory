@@ -25,4 +25,48 @@ bool isValidPort(i32 port) {
     return ret;
 }
 
+bool isValidServiceId(const std::string& serviceId) {
+    if (serviceId.empty() || serviceId.length() > 128) {
+        return false;
+    }
+
+    for (char ch : serviceId) {
+        const unsigned char byte = static_cast<unsigned char>(ch);
+        if (byte < 32 || byte == 127) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool isValidIpTypeSelection(IpTypeSelection ipTypeSelection) {
+    return ipTypeSelection == IpTypeSelection::IPv4
+        || ipTypeSelection == IpTypeSelection::IPv6
+        || ipTypeSelection == IpTypeSelection::Both;
+}
+
+bool isValidIpAddress(const IpAddress& address) {
+    if (address.str.empty()) {
+        return false;
+    }
+
+    const usize byteCount = IpAddress::byteCount(address.type);
+    return byteCount == 4 || byteCount == 16;
+}
+
+bool isValidIpAddressList(const std::vector<IpAddress>& addresses) {
+    if (addresses.empty()) {
+        return false;
+    }
+
+    for (const IpAddress& address : addresses) {
+        if (!isValidIpAddress(address)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 } // namespace ip_inv
