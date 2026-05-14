@@ -4,6 +4,7 @@ info:
   version: 0.1.0
 servers:
   - url: /
+
 paths:
   /health:
     get:
@@ -11,7 +12,7 @@ paths:
       operationId: getHealth
       responses:
         "200":
-          description: Service health status
+          description: Service health status.
           content:
             application/json:
               schema:
@@ -21,6 +22,8 @@ paths:
                   value:
                     statusCode: "0"
                     statusMessage: healthy
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /ip-inventory/ip-pool:
     post:
@@ -29,28 +32,22 @@ paths:
       description: |
         Adds one or more IPv4 or IPv6 addresses to the IP inventory pool.
 
-        The request body must contain a non-empty `ipAddresses` array. Each item declares the textual IP address and its
-        IP type. The server validates each address against the declared type before storing it. IPv4 input is accepted
-        only in strict dotted-decimal form, with four decimal segments, no leading zeroes except the single value `0`,
-        and each segment in the range `0..255`. IPv6 input is parsed with standard IPv6 syntax, including compressed
-        forms.
-
-        Addresses are stored in the pool with the initial state `available`. The current implementation ignores duplicate
-        pool entries at the database layer and still returns a successful status when the request is otherwise valid.
+        Each item must include `ip` and `ipType`. The `ipType` value is parsed case-insensitively as `IPv4` or `IPv6`.
+        Extra JSON fields are ignored by the current DTO parser. Duplicate pool entries are ignored by the database and
+        still result in a successful response when the rest of the request is valid.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/IpAddressesRequest"
+              $ref: "#/components/schemas/IpPoolRequest"
             examples:
               mixedIpPool:
-                summary: Add IPv4 and IPv6 addresses
                 value:
                   ipAddresses:
-                    - ip: 192.168.1.10
+                    - ip: 95.44.73.19
                       ipType: IPv4
-                    - ip: 2001:db8::1
+                    - ip: 2a01:5a9:1a4:95c::1
                       ipType: IPv6
       responses:
         "200":
@@ -61,11 +58,9 @@ paths:
                 $ref: "#/components/schemas/StatusResponse"
               examples:
                 success:
-                  value:
-                    statusCode: "0"
-                    statusMessage: Successful operation. OK
+                  $ref: "#/components/examples/SuccessfulOperation"
         "400":
-          description: The request body, IP type, or one of the declared IP addresses is invalid.
+          description: The request JSON, declared IP type, or one of the declared IP addresses is invalid.
           content:
             application/json:
               schema:
@@ -86,28 +81,20 @@ paths:
                 invalidIp:
                   value:
                     statusCode: "1"
-                    statusMessage: "Failed to add ip address; reason: invalid ip for declared type"
+                    statusMessage: "Invalid IP address for declared ipType: 999.1.1.1"
         "500":
-          description: An unhandled server error occurred.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StatusResponse"
-              examples:
-                internalServerError:
-                  value:
-                    statusCode: "1"
-                    statusMessage: internal server error
+          $ref: "#/components/responses/InternalServerError"
 
   /ip-inventory/reserve-ip:
     post:
-      summary: Reserve an IP address
+      summary: Reserve IP addresses
       operationId: reserveIp
       description: |
-        Reserves an available IP address for the given service and requested IP type.
+        Reserves an available IP address for the given service and requested address family.
 
-        The request body matches the current `IpReserveDto` shape: a service identifier and an `ipType` value. On success,
-        the server returns an `ipAddresses` array using the same IP address DTO shape used by the pool endpoint.
+        `ipType` is parsed case-insensitively as `IPv4`, `IPv6`, or `Both`. With `Both`, the current implementation
+        reserves one IPv4 address and one IPv6 address in the same transaction. If either requested family has no
+        available address, the whole reservation request fails.
       requestBody:
         required: true
         content:
@@ -116,30 +103,30 @@ paths:
               $ref: "#/components/schemas/IpReserveRequest"
             examples:
               reserveIpv4:
-                summary: Reserve an IPv4 address
                 value:
                   serviceId: service-a
                   ipType: IPv4
-              reserveIpv6:
-                summary: Reserve an IPv6 address
+              reserveBoth:
                 value:
                   serviceId: service-a
-                  ipType: IPv6
+                  ipType: Both
       responses:
         "200":
-          description: An IP address was reserved for the service.
+          description: IP addresses were reserved for the service.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IpAddressesRequest"
+                $ref: "#/components/schemas/IpAddressesResponse"
               examples:
-                success:
+                reservedBoth:
                   value:
                     ipAddresses:
-                      - ip: 192.168.1.10
+                      - ip: 95.44.73.19
                         ipType: IPv4
+                      - ip: 2a01:5a9:1a4:95c::1
+                        ipType: IPv6
         "400":
-          description: The request body, requested IP type, or reservation request is invalid.
+          description: The request JSON, requested IP type, or reservation request is invalid.
           content:
             application/json:
               schema:
@@ -156,40 +143,252 @@ paths:
                 unavailable:
                   value:
                     statusCode: "1"
-                    statusMessage: "Failed to reserve IP address; reason: IP is not available"
+                    statusMessage: "Failed to reserve IP address; reason: no available IPv4 addresses"
         "500":
-          description: An unhandled server error occurred.
+          $ref: "#/components/responses/InternalServerError"
+
+  /ip-inventory/assign-ip-serviceId:
+    post:
+      summary: Assign reserved IP addresses to a service
+      operationId: assignIpServiceId
+      description: |
+        Assigns one or more reserved IP addresses to the given service.
+
+        The current parser accepts the task shape, where each `ipAddresses` item is an object with an `ip` field. It also
+        still accepts raw string items for compatibility with earlier local curl examples. Each IP must already be
+        reserved for the same service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IpAssignmentRequest"
+            examples:
+              assignIps:
+                value:
+                  serviceId: service-a
+                  ipAddresses:
+                    - ip: 95.44.73.19
+                    - ip: 2a01:5a9:1a4:95c::1
+      responses:
+        "200":
+          description: The IP addresses were assigned.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/StatusResponse"
               examples:
-                internalServerError:
+                success:
+                  $ref: "#/components/examples/SuccessfulOperation"
+        "400":
+          description: The request JSON, IP address list, service, reservation, or assignment state is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                emptyAddresses:
                   value:
                     statusCode: "1"
-                    statusMessage: internal server error
+                    statusMessage: Request field 'ipAddresses' must be a non-empty array
+                invalidIp:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Invalid IP address: not-an-ip"
+                serviceNotFound:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to assign IP address; reason: service not found"
+                notReserved:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to assign IP address; reason: ip address 95.44.73.19 not reserved"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ip-inventory/terminate-ip-serviceId:
+    post:
+      summary: Terminate IP assignments for a service
+      operationId: terminateIpServiceId
+      description: |
+        Removes one or more assigned IP addresses from the given service, returning them to the available pool.
+
+        The current parser accepts the task shape, where each `ipAddresses` item is an object with an `ip` field. It also
+        still accepts raw string items for compatibility with earlier local curl examples.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IpAssignmentRequest"
+            examples:
+              terminateIps:
+                value:
+                  serviceId: service-a
+                  ipAddresses:
+                    - ip: 95.44.73.19
+      responses:
+        "200":
+          description: The IP assignments were terminated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                success:
+                  $ref: "#/components/examples/SuccessfulOperation"
+        "400":
+          description: The request JSON, IP address list, service, or assignment state is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                serviceNotFound:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to terminate IP address; reason: failed to find service"
+                notAssigned:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to terminate IP address; reason: the ip 95.44.73.19 is not available"
+                differentService:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to terminate IP address; reason: the ip 95.44.73.19 is reserved for another service"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ip-inventory/serviceId-change:
+    post:
+      summary: Change a service identifier
+      operationId: changeServiceId
+      description: |
+        Renames an existing service identifier. Assigned IPs and reservations remain linked because the database stores
+        references to the internal service row.
+
+        If `serviceIdOld` and `serviceId` are the same string, the repository logs the no-op and returns success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeServiceIdRequest"
+            examples:
+              changeService:
+                value:
+                  serviceIdOld: service-a
+                  serviceId: service-b
+      responses:
+        "200":
+          description: The service identifier was changed, or the requested change was a no-op.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                success:
+                  $ref: "#/components/examples/SuccessfulOperation"
+        "400":
+          description: The request JSON, source service, or target service is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                serviceNotFound:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to change service id; reason: service (service-a) does not exist"
+                serviceAlreadyExists:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to change service id; reason: service (service-b) already exists"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ip-inventory/serviceId:
+    get:
+      summary: Get assigned IP addresses for a service
+      operationId: getServiceId
+      parameters:
+        - name: serviceId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Service identifier to look up. An empty value is rejected by the handler.
+          example: service-a
+      responses:
+        "200":
+          description: Assigned IP addresses for the service.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpAddressesResponse"
+              examples:
+                assignedIps:
+                  value:
+                    ipAddresses:
+                      - ip: 95.44.73.19
+                        ipType: IPv4
+                      - ip: 2a01:5a9:1a4:95c::1
+                        ipType: IPv6
+        "400":
+          description: The query parameter is missing, empty, or the service does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                missingServiceId:
+                  value:
+                    statusCode: "1"
+                    statusMessage: Missing serviceId query parameter
+                emptyServiceId:
+                  value:
+                    statusCode: "1"
+                    statusMessage: serviceId cannot be empty
+                serviceNotFound:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to get assigned ips for service; reason: service not found"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
 components:
-  schemas:
-    IpReserveRequest:
-      type: object
-      required:
-        - serviceId
-        - ipType
-      properties:
-        serviceId:
-          type: string
-          description: Service identifier that the reserved IP address belongs to.
-          example: service-a
-        ipType:
-          type: string
-          enum:
-            - IPv4
-            - IPv6
-          description: Requested address family for the reservation.
-      additionalProperties: false
+  responses:
+    InternalServerError:
+      description: An unhandled server error occurred in the endpoint guard.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StatusResponse"
+          examples:
+            internalServerError:
+              value:
+                statusCode: "1"
+                statusMessage: internal server error
+    FileNotFound:
+      description: The requested static file was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StatusResponse"
+          examples:
+            fileNotFound:
+              value:
+                statusCode: "1"
+                statusMessage: file not found
 
-    IpAddressesRequest:
+  examples:
+    SuccessfulOperation:
+      value:
+        statusCode: "0"
+        statusMessage: Successful operation. OK
+
+  schemas:
+    IpPoolRequest:
       type: object
       required:
         - ipAddresses
@@ -198,10 +397,68 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: "#/components/schemas/IpAddress"
-      additionalProperties: false
+            $ref: "#/components/schemas/IpAddressWithType"
 
-    IpAddress:
+    IpReserveRequest:
+      type: object
+      required:
+        - serviceId
+        - ipType
+      properties:
+        serviceId:
+          type: string
+          example: service-a
+        ipType:
+          type: string
+          description: Parsed case-insensitively by the handler.
+          enum:
+            - IPv4
+            - IPv6
+            - Both
+
+    IpAssignmentRequest:
+      type: object
+      required:
+        - serviceId
+        - ipAddresses
+      properties:
+        serviceId:
+          type: string
+          example: service-a
+        ipAddresses:
+          type: array
+          minItems: 1
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/IpAddressOnly"
+              - type: string
+                description: Also accepted by the current parser for compatibility.
+                example: 95.44.73.19
+
+    ChangeServiceIdRequest:
+      type: object
+      required:
+        - serviceIdOld
+        - serviceId
+      properties:
+        serviceIdOld:
+          type: string
+          example: service-a
+        serviceId:
+          type: string
+          example: service-b
+
+    IpAddressesResponse:
+      type: object
+      required:
+        - ipAddresses
+      properties:
+        ipAddresses:
+          type: array
+          items:
+            $ref: "#/components/schemas/IpAddressWithType"
+
+    IpAddressWithType:
       type: object
       required:
         - ip
@@ -209,17 +466,24 @@ components:
       properties:
         ip:
           type: string
-          description: IPv4 or IPv6 address text. The value must match the declared `ipType`.
           examples:
-            - 192.168.1.10
-            - 2001:db8::1
+            - 95.44.73.19
+            - 2a01:5a9:1a4:95c::1
         ipType:
           type: string
+          description: Parsed case-insensitively in requests and serialized as `IPv4` or `IPv6` in responses.
           enum:
             - IPv4
             - IPv6
-          description: Declared address family used when validating and storing the IP address.
-      additionalProperties: false
+
+    IpAddressOnly:
+      type: object
+      required:
+        - ip
+      properties:
+        ip:
+          type: string
+          example: 95.44.73.19
 
     StatusResponse:
       type: object
@@ -229,11 +493,8 @@ components:
       properties:
         statusCode:
           type: string
-          description: Application status code. `0` means success; `1` means failure.
           enum:
             - "0"
             - "1"
         statusMessage:
           type: string
-          description: Human-readable result message.
-      additionalProperties: false

@@ -31,8 +31,12 @@ curl -i -X POST http://127.0.0.1:8080/ip-inventory/assign-ip-serviceId \
   -d '{
     "serviceId": "service-a",
     "ipAddresses": [
-      "95.44.73.19",
-      "2a01:5a9:1a4:95c::1"
+      {
+        "ip": "95.44.73.19"
+      },
+      {
+        "ip": "2a01:5a9:1a4:95c::1"
+      }
     ]
   }'
 
@@ -53,7 +57,9 @@ curl -i -X POST http://127.0.0.1:8080/ip-inventory/terminate-ip-serviceId \
   -d '{
     "serviceId": "service-b",
     "ipAddresses": [
-      "95.44.73.19"
+      {
+        "ip": "95.44.73.19"
+      }
     ]
   }'
 

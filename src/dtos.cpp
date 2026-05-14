@@ -82,7 +82,12 @@ void fromJson(const nlohmann::json& json, AssignIpDto& dto) {
     dto.ipAddresses.reserve(ipAddresses.size());
 
     for (const nlohmann::json& item : ipAddresses) {
-        dto.ipAddresses.push_back(item);
+        if (item.is_string()) {
+            dto.ipAddresses.push_back(item);
+        }
+        else {
+            dto.ipAddresses.push_back(item.at("ip"));
+        }
     }
 }
 
@@ -105,7 +110,12 @@ void fromJson(const nlohmann::json& json, TerminateIpDto& dto) {
     dto.ipAddresses.reserve(ipAddresses.size());
 
     for (const nlohmann::json& item : ipAddresses) {
-        dto.ipAddresses.push_back(item);
+        if (item.is_string()) {
+            dto.ipAddresses.push_back(item);
+        }
+        else {
+            dto.ipAddresses.push_back(item.at("ip"));
+        }
     }
 }
 

@@ -32,7 +32,7 @@ std::string readTextFile(const std::filesystem::path& path);
 
 void execSqlScriptFromFile(sqlite3* db, const std::filesystem::path& path);
 
-[[nodiscard]] bool isIpAddressAvailableQuery(sqlite3* db, const IpAddress& address);
+[[nodiscard]] bool isIpAddressAvailableForAssignmentQuery(sqlite3* db, const IpAddress& address);
 [[nodiscard]] bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out);
 [[nodiscard]] bool findIpAddressReservationQuery(sqlite3* db, const IpAddress& address, Reservation& out);
 void reserveIpAddressQuery(sqlite3* db, i64 serviceDbId, i64 expirationTime, const IpAddress& address);
@@ -42,6 +42,7 @@ void createServiceQuery(sqlite3* db, const std::string& serviceId);
 [[nodiscard]] i64 findServiceDbIdQuery(sqlite3* db, const std::string& serviceId);
 
 [[nodiscard]] bool isAssignedFor(sqlite3* db, i64 serviceDbId, const IpAddress& address);
+[[nodiscard]] bool isIpAddressAvailableForTerminationQuery(sqlite3* db, const IpAddress& address);
 void terminateAssignment(sqlite3* db, i64 serviceDbId, const IpAddress& address);
 
 } // namespace
@@ -132,6 +133,8 @@ InventoryStatus IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<I
         )sql"
     );
 
+    i32 ipAddressesAddedCount = 0;
+
     for (const IpAddress& address : addresses) {
         const i32 ipType = address.type == IpType::IPv4 ? 4 : 6;
         const i32 byteCount = i32(IpAddress::byteCount(address.type));
@@ -144,13 +147,16 @@ InventoryStatus IpInventoryRepositorySqlLite::addIpAddresses(const std::vector<I
 
         insertStm.reset();
         insertStm.clearBindings();
-    }
 
-    const i32 updated = sqlite3_changes(m_db);
+        const i32 updated = sqlite3_changes(m_db);
+        if (updated >= 1) {
+            ipAddressesAddedCount++;
+        }
+    }
 
     tx.commit();
 
-    std::cout << "Added " << updated << " ip addresses" << std::endl;
+    std::cout << "Added " << ipAddressesAddedCount << " ip addresses" << std::endl;
 
     return InventoryStatus::OkStatus();
 }
@@ -206,17 +212,15 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     if (ipv4IsRequested) {
         reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv4);
         ret.reservedIps.push_back(std::move(ipv4));
+        std::cout << "Reserved ipv4 addresses successfully" << std::endl;
     }
     if (ipv6IsRequested) {
         reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv6);
         ret.reservedIps.push_back(std::move(ipv6));
+        std::cout << "Reserved ipv6 addresses successfully" << std::endl;
     }
 
-    const i32 updated = sqlite3_changes(m_db);
-
     tx.commit();
-
-    std::cout << "Reserved " << updated << " ip addresses" << std::endl;
 
     return ret;
 }
@@ -247,22 +251,22 @@ InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(
     for (const auto& address : addresses) {
         Reservation reservation;
 
-        if (!isIpAddressAvailableQuery(m_db, addresses[0])) {
+        if (!isIpAddressAvailableForAssignmentQuery(m_db, address)) {
             InventoryStatus status;
             status.error = InventoryError::IpNotAvailable;
             status.detail = std::format(
                 "Failed to assign IP address; reason: ip address {} is not available",
-                addresses[0].str
+                address.str
             );
             return status;
         }
 
-        if (!findIpAddressReservationQuery(m_db, addresses[0], reservation)) {
+        if (!findIpAddressReservationQuery(m_db, address, reservation)) {
             InventoryStatus status;
             status.error = InventoryError::IpNotReserved;
             status.detail = std::format(
                 "Failed to assign IP address; reason: ip address {} not reserved",
-                addresses[0].str
+                address.str
             );
             return status;
         }
@@ -272,13 +276,13 @@ InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(
             status.error = InventoryError::IpReservedForDifferentService;
             status.detail = std::format(
                 "Failed to assign IP address; reason: ip address {} reserved for a differnet service",
-                addresses[0].str
+                address.str
             );
             return status;
         }
 
-        assignIpAddressQuery(m_db, addresses[0], serviceDbId, reservation.reservedId);
-        std::cout << "Assigned IP " << addresses[0].str << " for service " << serviceId;
+        assignIpAddressQuery(m_db, address, serviceDbId, reservation.reservedId);
+        std::cout << "Assigned IP " << address.str << " for service " << serviceId;
     }
 
     tx.commit();
@@ -312,7 +316,7 @@ InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(
     i32 terminatedCount = 0;
 
     for (const IpAddress& address : addresses) {
-        if (!isIpAddressAvailableQuery(m_db, address)) {
+        if (!isIpAddressAvailableForTerminationQuery(m_db, address)) {
             InventoryStatus status;
             status.error = InventoryError::IpNotAvailable;
             status.detail = std::format(
@@ -354,14 +358,31 @@ InventoryStatus IpInventoryRepositorySqlLite::changeServiceId(
         return status;
     }
 
+    if (serviceIdOld == serviceIdNew) {
+        std::cout << "Service id old and new are the same: " << serviceIdOld << std::endl;
+        return InventoryStatus::OkStatus();
+    }
+
     SqliteTransaction tx (m_db);
 
+    // The old service id must exist
     if (findServiceDbIdQuery(m_db, serviceIdOld) < 0) {
         InventoryStatus status;
         status.error = InventoryError::ServiceNotFound;
         status.detail = std::format(
             "Failed to change service id; reason: service ({}) does not exist",
             serviceIdOld
+        );
+        return status;
+    }
+
+    // The new service id must NOT exist
+    if (findServiceDbIdQuery(m_db, serviceIdNew) >= 0) {
+        InventoryStatus status;
+        status.error = InventoryError::ServiceAlreadyExists;
+        status.detail = std::format(
+            "Failed to change service id; reason: service ({}) already exists",
+            serviceIdNew
         );
         return status;
     }
@@ -584,14 +605,17 @@ void assignIpAddressQuery(sqlite3* db, const IpAddress& address, i64 serviceDbId
     }
 }
 
-bool isIpAddressAvailableQuery(sqlite3* db, const IpAddress& address) {
+bool isIpAddressAvailableForAssignmentQuery(sqlite3* db, const IpAddress& address) {
     SqliteStatement findIpAddressStm(
         db,
         R"sql(
             SELECT EXISTS(
                 SELECT 1
                 FROM ip_pool
-                WHERE ip_bytes = ? AND ip_type = ? AND assigned_id == NULL AND reserved_id == NULL
+                WHERE ip_bytes = ?
+                    AND ip_type = ?
+                    AND assigned_id IS NULL
+                    AND reserved_id IS NOT NULL
             );
         )sql"
     );
@@ -743,6 +767,31 @@ bool isAssignedFor(sqlite3* db, i64 serviceDbId, const IpAddress& address) {
     }
 
     return stmt.columnInt(0) != 0;
+}
+
+bool isIpAddressAvailableForTerminationQuery(sqlite3* db, const IpAddress& address) {
+    SqliteStatement findIpAddressStm(
+        db,
+        R"sql(
+            SELECT EXISTS(
+                SELECT 1
+                FROM ip_pool
+                WHERE ip_bytes = ?
+                    AND ip_type = ?
+                    AND assigned_id IS NOT NULL
+            );
+        )sql"
+    );
+
+    findIpAddressStm.bindBlob(1, address.bytes, address.byteCount(address.type));
+    findIpAddressStm.bindInt(2, i32(address.type));
+
+    if (!findIpAddressStm.stepRow()) {
+        return false;
+    }
+
+    i32 ret = findIpAddressStm.columnInt(0);
+    return ret != 0;
 }
 
 void terminateAssignment(sqlite3* db, i64 serviceDbId, const IpAddress& address) {

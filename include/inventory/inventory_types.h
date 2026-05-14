@@ -59,6 +59,7 @@ enum struct InventoryError {
     IpNotAvailable,
     DbNotInitialized,
     ServiceNotFound,
+    ServiceAlreadyExists,
     IpNotReserved,
     IpIsAssignedForDifferentService,
     IpReservedForDifferentService,
