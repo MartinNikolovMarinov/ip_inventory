@@ -636,7 +636,7 @@ void assignIpAddressQuery(sqlite3* db, const IpAddress& address, i64 serviceDbId
 
     assignToServiceStm.bindInt64(1, serviceDbId);
     assignToServiceStm.bindInt(2, i32(address.type));
-    assignToServiceStm.bindBlob(3, address.bytes, address.byteCount(address.type));
+    assignToServiceStm.bindBlob(3, address.bytes, i32(address.byteCount(address.type)));
 
     assignToServiceStm.execute();
 
@@ -661,7 +661,7 @@ bool isIpAddressAvailableForAssignmentQuery(sqlite3* db, const IpAddress& addres
         )sql"
     );
 
-    findIpAddressStm.bindBlob(1, address.bytes, address.byteCount(address.type));
+    findIpAddressStm.bindBlob(1, address.bytes, i32(address.byteCount(address.type)));
     findIpAddressStm.bindInt(2, i32(address.type));
 
     if (!findIpAddressStm.stepRow()) {
@@ -714,7 +714,7 @@ bool findIpAddressReservationQuery(sqlite3* db, const IpAddress& address, Reserv
         )sql"
     );
 
-    findReservationIdFromIpAddressStm.bindBlob(1, address.bytes, address.byteCount(address.type));
+    findReservationIdFromIpAddressStm.bindBlob(1, address.bytes, i32(address.byteCount(address.type)));
     findReservationIdFromIpAddressStm.bindInt(2, i32(address.type));
 
     if (!findReservationIdFromIpAddressStm.stepRow()) {
@@ -801,7 +801,7 @@ bool isAssignedFor(sqlite3* db, i64 serviceDbId, const IpAddress& address) {
 
     stmt.bindInt64(1, serviceDbId);
     stmt.bindInt(2, i32(address.type));
-    stmt.bindBlob(3, address.bytes, address.byteCount(address.type));
+    stmt.bindBlob(3, address.bytes, i32(address.byteCount(address.type)));
 
     if (!stmt.stepRow()) {
         return false;
@@ -824,7 +824,7 @@ bool isIpAddressAvailableForTerminationQuery(sqlite3* db, const IpAddress& addre
         )sql"
     );
 
-    findIpAddressStm.bindBlob(1, address.bytes, address.byteCount(address.type));
+    findIpAddressStm.bindBlob(1, address.bytes, i32(address.byteCount(address.type)));
     findIpAddressStm.bindInt(2, i32(address.type));
 
     if (!findIpAddressStm.stepRow()) {
@@ -849,7 +849,7 @@ void terminateAssignment(sqlite3* db, i64 serviceDbId, const IpAddress& address)
 
     terminateAssignmentStm.bindInt64(1, serviceDbId);
     terminateAssignmentStm.bindInt(2, i32(address.type));
-    terminateAssignmentStm.bindBlob(3, address.bytes, address.byteCount(address.type));
+    terminateAssignmentStm.bindBlob(3, address.bytes, i32(address.byteCount(address.type)));
 
     terminateAssignmentStm.execute();
 

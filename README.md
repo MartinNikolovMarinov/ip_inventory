@@ -28,12 +28,20 @@ Build:
 
 ```sh
 cmake --build build
+
+# For Windows MSVC it's required to pass the config option:
+cmake --build build --config Debug
+cmake --build build --config Release
 ```
 
 ## Tests
 
 ```sh
 ctest --test-dir build --output-on-failure
+
+# For Windows MSVC it's required to pass the config option:
+ctest --test-dir build -C Debug
+ctest --test-dir build -C Release
 ```
 
 ## Run
