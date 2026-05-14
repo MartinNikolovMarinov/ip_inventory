@@ -42,6 +42,10 @@ ServiceIpsResult IpInventoryService::getAssignedIpsForService(const std::string&
     return m_repository->getAssignedIpsForService(servideId);
 }
 
+ReservedIpsResult IpInventoryService::getReservedIps() {
+    return m_repository->getReservedIps();
+}
+
 void IpInventoryService::clearExpiredReservations() {
     m_repository->clearExpiredReservations();
 }

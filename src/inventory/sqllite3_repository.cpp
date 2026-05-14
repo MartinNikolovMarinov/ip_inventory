@@ -455,6 +455,50 @@ ServiceIpsResult IpInventoryRepositorySqlLite::getAssignedIpsForService(const st
     return ret;
 }
 
+ReservedIpsResult IpInventoryRepositorySqlLite::getReservedIps() {
+    ReservedIpsResult ret;
+
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        ret.status.error = InventoryError::DbNotInitialized;
+        ret.status.detail = "Failed to get reserved IP addresses; reason: database is not initialized";
+        return ret;
+    }
+
+    SqliteTransaction tx (m_db);
+
+    SqliteStatement selectReservedIpsStm(
+        m_db,
+        R"sql(
+            SELECT s.service_id, p.ip_bytes, p.ip_type, p.display_ip, r.expiration_time
+            FROM ip_pool p
+            INNER JOIN reserved_ips r ON r.id = p.reserved_id
+            INNER JOIN services s ON s.id = r.service_id
+            WHERE p.reserved_id IS NOT NULL
+            ORDER BY s.service_id, p.ip_type, p.ip_bytes
+        )sql"
+    );
+
+    while (selectReservedIpsStm.stepRow()) {
+        const void* blob = selectReservedIpsStm.columnBlob(1);
+        int blobSize = selectReservedIpsStm.columnBytes(1);
+
+        ReservedIpInfo reservedIp {};
+        reservedIp.serviceId = selectReservedIpsStm.columnText(0);
+        std::memcpy(reservedIp.address.bytes, blob, blobSize);
+        reservedIp.address.type = IpType(selectReservedIpsStm.columnInt(2));
+        reservedIp.address.str = selectReservedIpsStm.columnText(3);
+        reservedIp.expirationTime = selectReservedIpsStm.columnInt64(4);
+
+        ret.reservedIps.push_back(std::move(reservedIp));
+    }
+
+    tx.commit();
+
+    return ret;
+}
+
 void IpInventoryRepositorySqlLite::clearExpiredReservations() {
     using namespace std::chrono;
 

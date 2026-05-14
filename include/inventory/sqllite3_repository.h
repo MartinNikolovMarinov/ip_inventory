@@ -43,6 +43,8 @@ public:
 
     [[nodiscard]] virtual ServiceIpsResult getAssignedIpsForService(const std::string& servideId) override;
 
+    [[nodiscard]] ReservedIpsResult getReservedIps() override;
+
     void clearExpiredReservations() override;
 
 private:
@@ -53,4 +55,3 @@ private:
 };
 
 } // namespace ip_inv
-

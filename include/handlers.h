@@ -12,6 +12,7 @@ void assignIpServiceIdHandler(IpInventoryService& inventoryService, const httpli
 void terminateIpServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 void serviceIdChangeHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 void getServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
+void getReservedIpsHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 
 void serveFileHandler(const char* path, const char* contentType, httplib::Response& response);
 

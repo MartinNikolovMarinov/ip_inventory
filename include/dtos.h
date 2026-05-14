@@ -1,5 +1,7 @@
 #pragma once
 
+#include "types.h"
+
 #include <nlohmann/json.hpp>
 
 #include <string>
@@ -19,6 +21,17 @@ struct IpReserveDto {
 
 struct IpAddressesDto {
     std::vector<IpAddressDto> ipAddresses;
+};
+
+struct ReservedIpDto {
+    std::string serviceId;
+    std::string ip;
+    std::string ipType;
+    i64 expirationTime = 0;
+};
+
+struct ReservedIpsDto {
+    std::vector<ReservedIpDto> reservedIps;
 };
 
 struct StatusResponseDto {
@@ -49,6 +62,12 @@ void fromJson(const nlohmann::json& json, IpReserveDto& dto);
 
 [[nodiscard]] nlohmann::json toJson(const IpAddressesDto& dto);
 void fromJson(const nlohmann::json& json, IpAddressesDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const ReservedIpDto& dto);
+void fromJson(const nlohmann::json& json, ReservedIpDto& dto);
+
+[[nodiscard]] nlohmann::json toJson(const ReservedIpsDto& dto);
+void fromJson(const nlohmann::json& json, ReservedIpsDto& dto);
 
 [[nodiscard]] nlohmann::json toJson(const StatusResponseDto& dto);
 void fromJson(const nlohmann::json& json, StatusResponseDto& dto);

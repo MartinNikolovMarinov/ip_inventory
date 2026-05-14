@@ -24,6 +24,7 @@ public:
     );
     [[nodiscard]] InventoryStatus changeServiceId(const std::string& servideIdOld, const std::string& serviceIdNew);
     [[nodiscard]] ServiceIpsResult getAssignedIpsForService(const std::string& servideId);
+    [[nodiscard]] ReservedIpsResult getReservedIps();
 
     void clearExpiredReservations();
 

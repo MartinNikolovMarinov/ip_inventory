@@ -356,6 +356,44 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /ip-inventory/all-reserved-ips:
+    get:
+      summary: List all reserved IP addresses
+      operationId: getAllReservedIps
+      description: Returns every currently reserved IP address and the service it is reserved for.
+      responses:
+        "200":
+          description: Reserved IP addresses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservedIpsResponse"
+              examples:
+                reservedIps:
+                  value:
+                    reservedIps:
+                      - serviceId: service-a
+                        ip: 95.44.73.19
+                        ipType: IPv4
+                        expirationTime: 1715700000
+                      - serviceId: service-b
+                        ip: 2a01:5a9:1a4:95c::1
+                        ipType: IPv6
+                        expirationTime: 1715700000
+        "400":
+          description: The repository could not read reservations.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                dbNotInitialized:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to get reserved IP addresses; reason: database is not initialized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
 components:
   responses:
     InternalServerError:
@@ -457,6 +495,41 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IpAddressWithType"
+
+    ReservedIpsResponse:
+      type: object
+      required:
+        - reservedIps
+      properties:
+        reservedIps:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReservedIp"
+
+    ReservedIp:
+      type: object
+      required:
+        - serviceId
+        - ip
+        - ipType
+        - expirationTime
+      properties:
+        serviceId:
+          type: string
+          example: service-a
+        ip:
+          type: string
+          example: 95.44.73.19
+        ipType:
+          type: string
+          enum:
+            - IPv4
+            - IPv6
+        expirationTime:
+          type: integer
+          format: int64
+          description: Unix timestamp stored for the reservation expiration time.
+          example: 1715700000
 
     IpAddressWithType:
       type: object

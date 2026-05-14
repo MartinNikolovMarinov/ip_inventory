@@ -45,6 +45,7 @@ bool parseIpStrings(
 );
 
 IpAddressesDto makeIpAddressesDto(const std::vector<IpAddress>& reservedIps);
+ReservedIpsDto makeReservedIpsDto(const std::vector<ReservedIpInfo>& reservedIps);
 
 } // namespace
 
@@ -190,6 +191,17 @@ void getServiceIdHandler(IpInventoryService& inventoryService, const httplib::Re
     }
 
     IpAddressesDto responseDto = makeIpAddressesDto(result.serviceIps);
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
+}
+
+void getReservedIpsHandler(IpInventoryService& inventoryService, const httplib::Request&, httplib::Response& res) {
+    auto result = inventoryService.getReservedIps();
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
+        return;
+    }
+
+    ReservedIpsDto responseDto = makeReservedIpsDto(result.reservedIps);
     setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
 }
 
@@ -359,6 +371,26 @@ IpAddressesDto makeIpAddressesDto(const std::vector<IpAddress>& reservedIps) {
         }
 
         responseDto.ipAddresses.push_back(std::move(dto));
+    }
+
+    return responseDto;
+}
+
+ReservedIpsDto makeReservedIpsDto(const std::vector<ReservedIpInfo>& reservedIps) {
+    ReservedIpsDto responseDto;
+    responseDto.reservedIps.reserve(reservedIps.size());
+
+    for (const ReservedIpInfo& reservedIp : reservedIps) {
+        ReservedIpDto dto;
+
+        dto.serviceId = reservedIp.serviceId;
+        dto.ip = reservedIp.address.str;
+        dto.expirationTime = reservedIp.expirationTime;
+        if (!serializeIpType(reservedIp.address.type, dto.ipType)) {
+            throw std::runtime_error("failed to serialize response");
+        }
+
+        responseDto.reservedIps.push_back(std::move(dto));
     }
 
     return responseDto;

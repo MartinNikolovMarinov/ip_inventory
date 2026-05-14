@@ -193,6 +193,7 @@ void configureHttpRoutes(App::Impl& app) {
     constexpr const char* IP_TERMINATE_SERVICE_ID_ENDPOINT = "/ip-inventory/terminate-ip-serviceId";
     constexpr const char* SERVICE_ID_CHANGE_ENDPOINT = "/ip-inventory/serviceId-change";
     constexpr const char* SERVICE_ID_ENDPOINT = "/ip-inventory/serviceId";
+    constexpr const char* ALL_RESERVED_IPS_ENDPOINT = "/ip-inventory/all-reserved-ips";
     constexpr const char* DOCS_NO_TRAILING_SLASH_ENDPOINT = "/docs";
     constexpr const char* DOCS_ENDPOINT = "/docs/";
     constexpr const char* OPENAPI_YAML_ENDPOINT = "/openapi.yaml";
@@ -232,6 +233,11 @@ void configureHttpRoutes(App::Impl& app) {
     app.server.Get(SERVICE_ID_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(SERVICE_ID_ENDPOINT, req, res, [&] {
             getServiceIdHandler(*app.inventoryService, req, res);
+        });
+    });
+    app.server.Get(ALL_RESERVED_IPS_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(ALL_RESERVED_IPS_ENDPOINT, req, res, [&] {
+            getReservedIpsHandler(*app.inventoryService, req, res);
         });
     });
 

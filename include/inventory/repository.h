@@ -32,6 +32,7 @@ public:
         const std::string& serviceIdNew
     ) = 0;
     [[nodiscard]] virtual ServiceIpsResult getAssignedIpsForService(const std::string& servideId) = 0;
+    [[nodiscard]] virtual ReservedIpsResult getReservedIps() = 0;
 
     virtual void clearExpiredReservations() = 0;
 };

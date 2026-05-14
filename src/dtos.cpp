@@ -51,6 +51,45 @@ void fromJson(const nlohmann::json& json, IpAddressesDto& dto) {
     }
 }
 
+nlohmann::json toJson(const ReservedIpDto& dto) {
+    return nlohmann::json {
+        {"serviceId", dto.serviceId},
+        {"ip", dto.ip},
+        {"ipType", dto.ipType},
+        {"expirationTime", dto.expirationTime},
+    };
+}
+
+void fromJson(const nlohmann::json& json, ReservedIpDto& dto) {
+    json.at("serviceId").get_to(dto.serviceId);
+    json.at("ip").get_to(dto.ip);
+    json.at("ipType").get_to(dto.ipType);
+    json.at("expirationTime").get_to(dto.expirationTime);
+}
+
+nlohmann::json toJson(const ReservedIpsDto& dto) {
+    nlohmann::json reservedIps = nlohmann::json::array();
+    for (const ReservedIpDto& reservedIp : dto.reservedIps) {
+        reservedIps.push_back(toJson(reservedIp));
+    }
+
+    return nlohmann::json {
+        {"reservedIps", std::move(reservedIps)},
+    };
+}
+
+void fromJson(const nlohmann::json& json, ReservedIpsDto& dto) {
+    const nlohmann::json& reservedIps = json.at("reservedIps");
+    dto.reservedIps.clear();
+    dto.reservedIps.reserve(reservedIps.size());
+
+    for (const nlohmann::json& item : reservedIps) {
+        ReservedIpDto reservedIp {};
+        fromJson(item, reservedIp);
+        dto.reservedIps.push_back(std::move(reservedIp));
+    }
+}
+
 nlohmann::json toJson(const StatusResponseDto& dto) {
     return nlohmann::json {
         {"statusCode", dto.statusCode},

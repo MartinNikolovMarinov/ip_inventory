@@ -98,4 +98,19 @@ struct ServiceIpsResult {
     }
 };
 
+struct ReservedIpInfo {
+    std::string serviceId;
+    IpAddress address;
+    i64 expirationTime = 0;
+};
+
+struct ReservedIpsResult {
+    InventoryStatus status;
+    std::vector<ReservedIpInfo> reservedIps;
+
+    [[nodiscard]] bool success() const noexcept {
+        return status.success();
+    }
+};
+
 } // namespace ip_inv
