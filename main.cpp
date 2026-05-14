@@ -1,7 +1,8 @@
 #include "app.h"
 
-#include <thread>
+#include <filesystem>
 #include <iostream>
+#include <thread>
 
 using namespace ip_inv;
 
@@ -14,7 +15,9 @@ i32 main() {
     cfg.ipAddress = "localhost";
     cfg.databaseName = "ip_inventory.sqlite3";
     cfg.schemaInitScriptPath = IP_INVENTORY_SOURCE_DIR "/schema/001_init_db.sql";
-    cfg.dropCreateDbOnStart = true;
+    cfg.dropCreateDbOnStart = !std::filesystem::exists(
+        std::filesystem::path(IP_INVENTORY_SQLITE3_DB_ROOT) / cfg.databaseName
+    );
     cfg.port = 8080;
     cfg.serverThreadCount = concurrency > 0 ? concurrency : 1;
     cfg.gcIntervalSeconds = 60 * 60;
