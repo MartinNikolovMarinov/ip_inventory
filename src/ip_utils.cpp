@@ -1,4 +1,5 @@
 #include "ip_utils.h"
+#include "inventory/inventory_types.h"
 
 #include <cctype>
 #include <cstring>
@@ -64,6 +65,8 @@ bool parseIpAddress(IpAddress& address) {
             return parseIpV4(address);
         case IpType::IPv6:
             return parseIpV6(address);
+        case IpType::Undefined:
+            return false;
     }
 
     return false;

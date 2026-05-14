@@ -252,6 +252,9 @@ bool serializeIpType(IpType type, std::string& out) {
         case IpType::IPv6:
             out = "IPv6";
             return true;
+        case IpType::Undefined:
+            out = "Undefined";
+            return false;
     }
 
     return false;

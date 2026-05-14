@@ -353,19 +353,46 @@ InventoryStatus IpInventoryRepositorySqlLite::changeServiceId(
     return InventoryStatus::OkStatus();
 }
 
-ServiceIpsResult IpInventoryRepositorySqlLite::getAssignedIpsForService(const std::string& servideId) {
+ServiceIpsResult IpInventoryRepositorySqlLite::getAssignedIpsForService(const std::string& serviceId) {
     ServiceIpsResult ret;
 
     std::lock_guard lock(m_dbMutex);
 
     if (m_db == nullptr) {
         ret.status.error = InventoryError::DbNotInitialized;
-        ret.status.detail = "Failed to change service id; reason: database is not initialized";
+        ret.status.detail = "Failed to get assigned ips for service; reason: database is not initialized";
         return ret;
     }
 
-    // TODO: implement get assigned ips for service.
-    (void)servideId;
+    i64 serviceDbId = findServiceDbIdQuery(m_db, serviceId);
+    if (serviceDbId < 0) {
+        ret.status.error = InventoryError::ServiceNotFound;
+        ret.status.detail = "Failed to get assigned ips for service; reason: service not found";
+        return ret;
+    }
+
+    SqliteStatement selectIpAddressesStm(
+        m_db,
+        R"sql(
+            SELECT ip_bytes, ip_type, display_ip
+            FROM ip_pool
+            WHERE assigned_id = ?
+        )sql"
+    );
+
+    selectIpAddressesStm.bindInt64(1, serviceDbId);
+
+    while (selectIpAddressesStm.stepRow()) {
+        const void* blob = selectIpAddressesStm.columnBlob(0);
+        int blobSize = selectIpAddressesStm.columnBytes(0);
+
+        IpAddress address = {};
+        std::memcpy(address.bytes, blob, blobSize);
+        address.type = IpType(selectIpAddressesStm.columnInt(1));
+        address.str = selectIpAddressesStm.columnText(2);
+
+        ret.serviceIps.push_back(std::move(address));
+    }
 
     return ret;
 }

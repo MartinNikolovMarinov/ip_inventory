@@ -8,20 +8,16 @@
 namespace ip_inv {
 
 enum struct IpType {
+    Undefined,
     IPv4 = 4,
     IPv6 = 6
 };
 
 enum struct IpTypeSelection {
+    Undefined,
     IPv4,
     IPv6,
     Both
-};
-
-enum struct IpState {
-    Free,
-    Reserved,
-    Assigned
 };
 
 struct IpAddress {
@@ -31,8 +27,9 @@ struct IpAddress {
 
     [[nodiscard]] static constexpr usize byteCount(IpType ipType) noexcept {
         switch (ipType) {
-            case IpType::IPv4: return 4;
-            case IpType::IPv6: return 16;
+            case IpType::IPv4:      return 4;
+            case IpType::IPv6:      return 16;
+            case IpType::Undefined: return 0;
         }
 
         return 0;
