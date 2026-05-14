@@ -95,6 +95,14 @@ set(ip_inventory_test_validation_src
     src/validation.cpp
 )
 
+set(ip_inventory_test_sqlite_repository_src
+    tests/test_sqlite3_repository.cpp
+    tests/test_sqlite3_utils.cpp
+    src/inventory/sqllite3_repository.cpp
+    src/sqlite/sqlite.cpp
+    src/ip_utils.cpp
+)
+
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
 
 # ---------------------------------------- Begin Create Executables ----------------------------------------------------
@@ -151,15 +159,21 @@ function(add_unity_test test_name test_source)
 
     add_test(NAME ${test_name} COMMAND ${test_name})
 
+    if(OS STREQUAL "windows")
+        # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
+        target_link_libraries(${test_name} PRIVATE ws2_32)
+    endif()
+
 endfunction()
 
 add_unity_test(ip_inventory_test_validation "${ip_inventory_test_validation_src}")
 add_unity_test(ip_inventory_test_ip_utils "${ip_inventory_test_ip_utils_src}")
+add_unity_test(ip_inventory_test_sqlite_repository "${ip_inventory_test_sqlite_repository_src}" sqlite3)
 
-if(OS STREQUAL "windows")
-    # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
-    target_link_libraries(ip_inventory_test_ip_utils PRIVATE ws2_32)
-endif()
+target_compile_definitions(ip_inventory_test_sqlite_repository PRIVATE
+    IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    IP_INVENTORY_SQLITE3_DB_ROOT="${CMAKE_BINARY_DIR}/test_data"
+)
 
 endif()
 
