@@ -13,9 +13,11 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cctype>
 #include <filesystem>
 #include <format>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -31,6 +33,8 @@ namespace {
 void configureHttpRoutes(App::Impl& app);
 
 void logEndpointCall(const std::string_view endpoint, const httplib::Request& req);
+
+bool validateRequestSafety(const httplib::Request& req, httplib::Response& response);
 
 template<typename Func>
 void endpointGuard(
@@ -285,6 +289,77 @@ void logEndpointCall(const std::string_view endpoint, const httplib::Request& re
     std::cout << std::endl;
 }
 
+bool validateRequestSafety(const httplib::Request& req, httplib::Response& response) {
+    constexpr usize MAX_REQUEST_BODY_BYTES = 512 * 1024;
+
+    auto fail = [&response](std::string message) {
+        response.status = i32(HttpStatusCode::BadRequest);
+        response.set_content(toJson(statusResponse("1", std::move(message))).dump(), "application/json");
+        return false;
+    };
+
+    if (req.body.size() > MAX_REQUEST_BODY_BYTES) {
+        return fail("Request body is too large");
+    }
+
+    if (req.has_header("Content-Length")) {
+        const std::string contentLengthHeader = req.get_header_value("Content-Length");
+        if (contentLengthHeader.empty()) {
+            return fail("Invalid Content-Length header");
+        }
+
+        size_t contentLength = 0;
+        for (char ch : contentLengthHeader) {
+            if (ch < '0' || ch > '9') {
+                return fail("Invalid Content-Length header");
+            }
+
+            const size_t digit = size_t(ch - '0');
+            if (contentLength > (std::numeric_limits<size_t>::max() - digit) / 10) {
+                return fail("Invalid Content-Length header");
+            }
+
+            contentLength = contentLength * 10 + digit;
+        }
+
+        if (contentLength != req.body.size()) {
+            return fail("Content-Length does not match request body size");
+        }
+    }
+    else if (!req.body.empty()) {
+        return fail("Missing Content-Length header");
+    }
+
+    if (!req.body.empty()) {
+        if (!req.has_header("Content-Type")) {
+            return fail("Missing Content-Type header");
+        }
+
+        std::string contentType = req.get_header_value("Content-Type");
+        const auto semicolon = contentType.find(';');
+        if (semicolon != std::string::npos) {
+            contentType.resize(semicolon);
+        }
+
+        while (!contentType.empty() && std::isspace(static_cast<unsigned char>(contentType.back()))) {
+            contentType.pop_back();
+        }
+        while (!contentType.empty() && std::isspace(static_cast<unsigned char>(contentType.front()))) {
+            contentType.erase(contentType.begin());
+        }
+
+        for (char& ch : contentType) {
+            ch = char(std::tolower(static_cast<unsigned char>(ch)));
+        }
+
+        if (contentType != "application/json") {
+            return fail("Content-Type must be application/json");
+        }
+    }
+
+    return true;
+}
+
 template<typename Func>
 void endpointGuard(
     const char* endpoint,
@@ -292,16 +367,14 @@ void endpointGuard(
     httplib::Response& response,
     Func&& func
 ) {
-    // TODO: Add cheap request-level safety checks before handlers parse or allocate:
-    //       * reject request bodies above the endpoint's expected maximum size
-    //       * require application/json for JSON endpoints
-    //       * keep DTO/domain validation strict: bounded arrays, bounded strings, known fields, known enum values
-    //       * keep SQL injection resistance in repository code by using prepared statements and bound parameters only
-
     try {
         ScopeProfiler profiler(endpoint);
 
         logEndpointCall(endpoint, req);
+
+        if (!validateRequestSafety(req, response)) {
+            return;
+        }
 
         std::forward<Func>(func)();
     }
