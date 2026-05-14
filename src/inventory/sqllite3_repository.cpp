@@ -284,7 +284,10 @@ InventoryStatus IpInventoryRepositorySqlLite::assignIpAddress(
     return InventoryStatus::OkStatus();
 }
 
-InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(const std::string& serviceId, std::vector<IpAddress>&& addresses) {
+InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(
+    const std::string& serviceId,
+    std::vector<IpAddress>&& addresses
+) {
     std::lock_guard lock(m_dbMutex);
 
     if (m_db == nullptr) {
@@ -294,9 +297,50 @@ InventoryStatus IpInventoryRepositorySqlLite::terminateIpAssignment(const std::s
         return status;
     }
 
-    // TODO: implement terminate.
-    (void)serviceId;
-    (void)addresses;
+    i64 serviceDbId = findServiceDbIdQuery(m_db, serviceId);
+    if (serviceDbId < 0) {
+        InventoryStatus status;
+        status.error = InventoryError::ServiceNotFound;
+        status.detail = "Failed to terminate IP address; reason: failed to find service";
+        return status;
+    }
+
+    SqliteTransaction tx (m_db);
+
+    SqliteStatement terminateAssignmentStm(
+        m_db,
+        R"sql(
+            UPDATE ip_pool
+            SET assigned_id = NULL
+            WHERE assigned_id = ?
+                AND ip_type = ?
+                AND ip_bytes = ?
+        )sql"
+    );
+
+    i32 terminatedCount = 0;
+
+    for (const IpAddress& address : addresses) {
+        terminateAssignmentStm.bindInt64(1, serviceDbId);
+        terminateAssignmentStm.bindInt(2, i32(address.type));
+        terminateAssignmentStm.bindBlob(3, address.bytes, address.byteCount(address.type));
+
+        terminateAssignmentStm.execute();
+
+        const i32 updated = sqlite3_changes(m_db);
+        if (updated != 1) {
+            throw std::runtime_error("failed to terminate requested IP assignment");
+        }
+
+        terminateAssignmentStm.reset();
+        terminateAssignmentStm.clearBindings();
+
+        terminatedCount++;
+    }
+
+    tx.commit();
+
+    std::cout << "Terminated " << terminatedCount << " ips for service " << serviceId << std::endl;
 
     return InventoryStatus::OkStatus();
 }
