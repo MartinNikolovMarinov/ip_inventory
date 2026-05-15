@@ -108,7 +108,7 @@ Swagger UI is available at:
 http://localhost:8080/docs/
 ```
 
-**IMPORTANT:** The swagger endpoint is fully functional. Every listed api endpoint can be "executed" and tested. [Swagger Example Link](docs/swagger_example.md)
+**IMPORTANT:** The swagger endpoint is fully functional. Every listed api endpoint can be "executed" and tested.
 
 ## Folder Structure
 
