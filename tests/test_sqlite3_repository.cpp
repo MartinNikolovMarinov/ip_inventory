@@ -23,7 +23,7 @@ void setUp() {
 
 void tearDown() {}
 
-static void add_ip_addresses_handles_ipv4_ipv6_duplicates_and_mixed_existing_rows() {
+static void addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows() {
     IpInventoryRepositorySqlLite repository(g_databaseName);
     repository.initializeDb(false);
 
@@ -83,7 +83,7 @@ i32 main() {
     g_databasePath = test::testDatabasePath(g_databaseName);
 
     UNITY_BEGIN();
-    RUN_TEST(add_ip_addresses_handles_ipv4_ipv6_duplicates_and_mixed_existing_rows);
+    RUN_TEST(addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows);
     const i32 result = UNITY_END();
 
     std::filesystem::remove(g_databasePath);

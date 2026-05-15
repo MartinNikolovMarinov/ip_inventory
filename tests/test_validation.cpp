@@ -9,7 +9,7 @@ void setUp() {}
 
 void tearDown() {}
 
-static void validates_ports() {
+void validatesPorts() {
     struct TestCase {
         i32 value;
         bool expected;
@@ -31,7 +31,7 @@ static void validates_ports() {
     }
 }
 
-static void validates_database_names() {
+void validatesDatabaseNames() {
     struct TestCase {
         const char* value;
         bool expected;
@@ -54,7 +54,7 @@ static void validates_database_names() {
     }
 }
 
-static void validates_service_ids() {
+void validatesServiceIds() {
     const std::string longServiceId(129, 'a');
 
     struct TestCase {
@@ -78,14 +78,14 @@ static void validates_service_ids() {
     }
 }
 
-static void validates_ip_type_selections() {
+void validatesIpTypeSelections() {
     TEST_ASSERT_TRUE(isValidIpTypeSelection(IpTypeSelection::IPv4));
     TEST_ASSERT_TRUE(isValidIpTypeSelection(IpTypeSelection::IPv6));
     TEST_ASSERT_TRUE(isValidIpTypeSelection(IpTypeSelection::Both));
     TEST_ASSERT_FALSE(isValidIpTypeSelection(IpTypeSelection::Undefined));
 }
 
-static void validates_ip_addresses() {
+void validatesIpAddresses() {
     const IpAddress ipv4 {"95.44.73.19", {95, 44, 73, 19}, IpType::IPv4};
     const IpAddress ipv6 {"2a01:5a9:1a4:95c::1", {}, IpType::IPv6};
     const IpAddress emptyText {"", {95, 44, 73, 19}, IpType::IPv4};
@@ -97,7 +97,7 @@ static void validates_ip_addresses() {
     TEST_ASSERT_FALSE(isValidIpAddress(undefined));
 }
 
-static void validates_ip_address_lists() {
+void validatesIpAddressLists() {
     const IpAddress ipv4 {"95.44.73.19", {95, 44, 73, 19}, IpType::IPv4};
     const IpAddress ipv6 {"2a01:5a9:1a4:95c::1", {}, IpType::IPv6};
     const IpAddress invalid {"", {}, IpType::IPv4};
@@ -110,11 +110,11 @@ static void validates_ip_address_lists() {
 
 int main() {
     UNITY_BEGIN();
-    RUN_TEST(validates_ports);
-    RUN_TEST(validates_database_names);
-    RUN_TEST(validates_service_ids);
-    RUN_TEST(validates_ip_type_selections);
-    RUN_TEST(validates_ip_addresses);
-    RUN_TEST(validates_ip_address_lists);
+    RUN_TEST(validatesPorts);
+    RUN_TEST(validatesDatabaseNames);
+    RUN_TEST(validatesServiceIds);
+    RUN_TEST(validatesIpTypeSelections);
+    RUN_TEST(validatesIpAddresses);
+    RUN_TEST(validatesIpAddressLists);
     return UNITY_END();
 }
