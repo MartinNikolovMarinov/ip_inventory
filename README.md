@@ -225,6 +225,16 @@ The database schema has the expected `services` and `ip_pool` tables, plus a sep
 
 If reservation traffic becomes heavier, an in-memory cache for reserved IPs could be added in the service layer without changing the repository contract.
 
+### (IMPORTANT) Note on reservation
+
+The `reserve-ip` endpoint is implemented idempotently based on my interpretation of the task statement:
+
+"Returns reserved IP address for specific serviceId (or any free IP address if not reserved)."
+
+If a matching active reservation already exists for the service, it is returned instead of allocating a new IP address.
+
+This is my interpretation.
+
 ### Design Diagram
 ![Design Diagram](./docs/Ip_invetory_design_diagram.png)
 

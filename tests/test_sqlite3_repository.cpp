@@ -100,6 +100,32 @@ void clearExpiredReservationsRemovesPastReservation() {
     TEST_ASSERT_EQUAL(0, reservedAfterGc.reservedIps.size());
 }
 
+void reserveIpReturnsExistingReservationForService() {
+    IpInventoryRepositorySqlLite repository(g_databaseName);
+    repository.initializeDb(false);
+
+    constexpr const char* SERVICE_ID = "service-a";
+    const IpAddress ipv4A = test::makeAddress("95.44.73.19");
+    const IpAddress ipv4B = test::makeAddress("95.44.73.18");
+
+    TEST_ASSERT_TRUE(repository.addIpAddresses({ipv4A, ipv4B}).success());
+
+    ReserveIpResult firstReserve = repository.reserveIpAddress(SERVICE_ID, IpTypeSelection::IPv4, 60);
+    TEST_ASSERT_TRUE(firstReserve.success());
+    TEST_ASSERT_EQUAL(1, firstReserve.reservedIps.size());
+
+    ReserveIpResult secondReserve = repository.reserveIpAddress(SERVICE_ID, IpTypeSelection::IPv4, 60);
+    TEST_ASSERT_TRUE(secondReserve.success());
+    TEST_ASSERT_EQUAL(1, secondReserve.reservedIps.size());
+    TEST_ASSERT_TRUE(firstReserve.reservedIps[0] == secondReserve.reservedIps[0]);
+
+    ReservedIpsResult reservedIps = repository.getReservedIps();
+    TEST_ASSERT_TRUE(reservedIps.success());
+    TEST_ASSERT_EQUAL(1, reservedIps.reservedIps.size());
+    TEST_ASSERT_EQUAL_STRING(SERVICE_ID, reservedIps.reservedIps[0].serviceId.c_str());
+    TEST_ASSERT_TRUE(firstReserve.reservedIps[0] == reservedIps.reservedIps[0].address);
+}
+
 } // namespace
 
 void setUp() {
@@ -117,6 +143,7 @@ i32 main() {
     UNITY_BEGIN();
     RUN_TEST(addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows);
     RUN_TEST(clearExpiredReservationsRemovesPastReservation);
+    RUN_TEST(reserveIpReturnsExistingReservationForService);
     const i32 result = UNITY_END();
 
     std::filesystem::remove(g_databasePath);

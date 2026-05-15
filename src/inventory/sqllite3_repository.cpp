@@ -34,6 +34,7 @@ void execSqlScriptFromFile(sqlite3* db, const std::filesystem::path& path);
 
 [[nodiscard]] bool isIpAddressAvailableForAssignmentQuery(sqlite3* db, const IpAddress& address);
 [[nodiscard]] bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out);
+[[nodiscard]] bool findReservedIpAddressForServiceQuery(sqlite3* db, i64 serviceDbId, IpType type, IpAddress& out);
 [[nodiscard]] bool findIpAddressReservationQuery(sqlite3* db, const IpAddress& address, Reservation& out);
 void reserveIpAddressQuery(sqlite3* db, i64 serviceDbId, i64 expirationTime, const IpAddress& address);
 void assignIpAddressQuery(sqlite3* db, const IpAddress& address, i64 serviceDbId, i64 reservationId);
@@ -178,11 +179,19 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
 
     SqliteTransaction tx(m_db);
 
+    createServiceQuery(m_db, serviceId);
+    i64 serviceDbId = findServiceDbIdQuery(m_db, serviceId);
+    if (serviceDbId < 0) {
+        throw std::runtime_error("Failed to read service that should have been created just now");
+    }
+
     IpAddress ipv4;
+    bool ipv4AlreadyReserved = false;
     if (ipv4IsRequested) {
         std::cout << "Requested to reserve IPV4 address" << std::endl;
 
-        if (!findAvailableIpAddressQuery(m_db, IpType::IPv4, ipv4)) {
+        ipv4AlreadyReserved = findReservedIpAddressForServiceQuery(m_db, serviceDbId, IpType::IPv4, ipv4);
+        if (!ipv4AlreadyReserved && !findAvailableIpAddressQuery(m_db, IpType::IPv4, ipv4)) {
             ret.status.error = InventoryError::IpUnavailable;
             ret.status.detail = "Failed to reserve IP address; reason: no available IPv4 addresses";
             return ret;
@@ -190,29 +199,29 @@ ReserveIpResult IpInventoryRepositorySqlLite::reserveIpAddress(
     }
 
     IpAddress ipv6;
+    bool ipv6AlreadyReserved = false;
     if (ipv6IsRequested) {
         std::cout << "Requested to reserve IPV6 address" << std::endl;
 
-        if (!findAvailableIpAddressQuery(m_db, IpType::IPv6, ipv6)) {
+        ipv6AlreadyReserved = findReservedIpAddressForServiceQuery(m_db, serviceDbId, IpType::IPv6, ipv6);
+        if (!ipv6AlreadyReserved && !findAvailableIpAddressQuery(m_db, IpType::IPv6, ipv6)) {
             ret.status.error = InventoryError::IpUnavailable;
             ret.status.detail = "Failed to reserve IP address; reason: no available IPv6 addresses";
             return ret;
         }
     }
 
-    createServiceQuery(m_db, serviceId);
-    i64 serviceDbId = findServiceDbIdQuery(m_db, serviceId);
-    if (serviceDbId < 0) {
-        throw std::runtime_error("Failed to read service that should have been created just now");
-    }
-
     if (ipv4IsRequested) {
-        reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv4);
+        if (!ipv4AlreadyReserved) {
+            reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv4);
+        }
         ret.reservedIps.push_back(std::move(ipv4));
         std::cout << "Reserved ipv4 address successfully" << std::endl;
     }
     if (ipv6IsRequested) {
-        reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv6);
+        if (!ipv6AlreadyReserved) {
+            reserveIpAddressQuery(m_db, serviceDbId, expirationTime, ipv6);
+        }
         ret.reservedIps.push_back(std::move(ipv6));
         std::cout << "Reserved ipv6 address successfully" << std::endl;
     }
@@ -734,6 +743,38 @@ bool findAvailableIpAddressQuery(sqlite3* db, IpType type, IpAddress& out) {
 
     std::memcpy(out.bytes, blob, blobSize);
     out.str = findAvailableIpStm.columnText(1);
+    out.type = type;
+
+    return true;
+}
+
+bool findReservedIpAddressForServiceQuery(sqlite3* db, i64 serviceDbId, IpType type, IpAddress& out) {
+    SqliteStatement findReservedIpStm(
+        db,
+        R"sql(
+            SELECT p.ip_bytes, p.display_ip
+            FROM ip_pool p
+            INNER JOIN reserved_ips r ON r.id = p.reserved_id
+            WHERE r.service_id = ?
+                AND p.ip_type = ?
+                AND p.assigned_id IS NULL
+            ORDER BY p.ip_bytes
+            LIMIT 1;
+        )sql"
+    );
+
+    findReservedIpStm.bindInt64(1, serviceDbId);
+    findReservedIpStm.bindInt(2, i32(type));
+
+    if (!findReservedIpStm.stepRow()) {
+        return false;
+    }
+
+    const void* blob = findReservedIpStm.columnBlob(0);
+    int blobSize = findReservedIpStm.columnBytes(0);
+
+    std::memcpy(out.bytes, blob, blobSize);
+    out.str = findReservedIpStm.columnText(1);
     out.type = type;
 
     return true;
