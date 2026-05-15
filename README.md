@@ -8,6 +8,7 @@
 ## Table of content
 
 - [Overview](#overview)
+- [Platforms](#platofrms)
 - [Building and running the Project](#building-and-running-the-project)
     - [Build](#build)
     - [Tests](#tests)
@@ -20,7 +21,21 @@
 
 ## Overview
 
-TODO: write a project overview
+IP Inventory is a service for managing a shared pool of IPv4 and IPv6 addresses. It keeps track of which addresses are available, temporarily reserved, or permanently assigned to a service.
+
+Clients use the API to add IP addresses to the pool, reserve addresses for a service, confirm a reservation by assigning the addresses, release assigned addresses, rename a service id, and query the current state of reservations or assignments. Reservations expire automatically if they are not assigned in time, so unused addresses return to the available pool.
+
+The service exposes an HTTP/JSON API on `http://localhost:8080` by default. The current implementation stores data in SQLite, but persistence is behind a repository interface, so the same business logic can be used with another storage backend that implements the repository contract.
+
+## Platforms
+
+The project is designed for cross-platform and cross-architecture compatibility, supporting major desktop operating systems (Linux, macOS, Windows), compiler toolchains (GCC, Clang, MSVC), and CPU architectures (x86_64, ARM64).
+
+Tested on:
+
+1. Windows 11 x86_64
+2. MacOS Tahoe (Version 26.5)
+3. Ubuntu Linux x86_64
 
 ## Building and running the Project
 
@@ -106,8 +121,16 @@ TODO: explain the basic classes and system components as well as the used depend
 
 ### Database schema
 
-TODO:
+![Database Schema](./docs/db_schema.png)
+
+The schema stores service ids separately from the IP pool and reservation rows, so pool entries can point either to an assigned service or to a temporary reservation. IP addresses use `(ip_type, ip_bytes)` as the primary key: the type distinguishes IPv4 from IPv6, and the binary bytes provide a canonical value independent of display formatting.
+
+Indexes are created on `ip_pool.assigned_id`, `ip_pool.reserved_id`, and `reserved_ips.expiration_time`. They support the common assignment/reservation lookups and make reservation cleanup efficient when expired rows are removed.
 
 ## Continues Integration
 
-TODO: Explain the github actions.
+The project uses GitHub Actions to run the same CMake configure, build, and test flow that is used locally. The workflows are triggered manually with `workflow_dispatch` so CI minutes are not spent on every commit while this is a personal project. For a production project, the same checks would normally run on pull requests, commits to `master`, and still remain available as manual runs.
+
+There are separate workflows for Ubuntu, macOS, and Windows, plus a combined build matrix. Together they exercise the project across the main supported platform and compiler combinations: Linux with GCC and Clang, macOS with Clang, and Windows with MSVC. The workflows build both Debug and Release presets and run the test suite after each build.
+
+This gives coverage across the main operating systems, compiler toolchains, and runner architectures used by the project, including x86 and ARM64 environments where they are available from GitHub-hosted runners.
