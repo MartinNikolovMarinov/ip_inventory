@@ -15,11 +15,9 @@ namespace {
 std::string g_databaseName;
 std::filesystem::path g_databasePath;
 
-void setUp() {
+void prepareRepositoryTestDatabase() {
     test::prepareDatabaseForTest(g_databaseName);
 }
-
-void tearDown() {}
 
 void addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows() {
     IpInventoryRepositorySqlLite repository(g_databaseName);
@@ -74,7 +72,41 @@ void addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows() {
     });
 }
 
+void clearExpiredReservationsRemovesPastReservation() {
+    IpInventoryRepositorySqlLite repository(g_databaseName);
+    repository.initializeDb(false);
+
+    constexpr const char* SERVICE_ID = "service-a";
+    constexpr const char* IPV4_STR = "95.44.73.19";
+    const IpAddress ipv4 = test::makeAddress(IPV4_STR);
+
+    TEST_ASSERT_TRUE(repository.addIpAddresses({ipv4}).success());
+
+    ReserveIpResult reserveResult = repository.reserveIpAddress(SERVICE_ID, IpTypeSelection::IPv4, 1);
+    TEST_ASSERT_TRUE(reserveResult.success());
+    TEST_ASSERT_EQUAL(1, reserveResult.reservedIps.size());
+    TEST_ASSERT_TRUE(ipv4 == reserveResult.reservedIps[0]);
+
+    ReservedIpsResult reservedBeforeGc = repository.getReservedIps();
+    TEST_ASSERT_TRUE(reservedBeforeGc.success());
+    TEST_ASSERT_EQUAL(1, reservedBeforeGc.reservedIps.size());
+    TEST_ASSERT_EQUAL_STRING(SERVICE_ID, reservedBeforeGc.reservedIps[0].serviceId.c_str());
+    TEST_ASSERT_TRUE(ipv4 == reservedBeforeGc.reservedIps[0].address);
+
+    repository.clearExpiredReservations();
+
+    ReservedIpsResult reservedAfterGc = repository.getReservedIps();
+    TEST_ASSERT_TRUE(reservedAfterGc.success());
+    TEST_ASSERT_EQUAL(0, reservedAfterGc.reservedIps.size());
+}
+
 } // namespace
+
+void setUp() {
+    prepareRepositoryTestDatabase();
+}
+
+void tearDown() {}
 
 i32 main() {
     std::filesystem::create_directories(test::testDatabaseRoot());
@@ -84,6 +116,7 @@ i32 main() {
 
     UNITY_BEGIN();
     RUN_TEST(addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows);
+    RUN_TEST(clearExpiredReservationsRemovesPastReservation);
     const i32 result = UNITY_END();
 
     std::filesystem::remove(g_databasePath);
