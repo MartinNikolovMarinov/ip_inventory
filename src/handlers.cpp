@@ -381,7 +381,7 @@ ReservedIpsDto makeReservedIpsDto(const std::vector<ReservedIpInfo>& reservedIps
     responseDto.reservedIps.reserve(reservedIps.size());
 
     for (const ReservedIpInfo& reservedIp : reservedIps) {
-        ReservedIpDto dto;
+        ReservedIpDto dto = {};
 
         dto.serviceId = reservedIp.serviceId;
         dto.ip = reservedIp.address.str;

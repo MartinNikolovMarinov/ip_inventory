@@ -16,8 +16,7 @@
 			"hidden": true,
 			"inherits": "base",
 			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug",
-				"IP_INVENTORY_ASSERT_ENABLED": "ON"
+				"CMAKE_BUILD_TYPE": "Debug"
 			}
 		},
 		{
@@ -25,8 +24,7 @@
 			"hidden": true,
 			"inherits": "base",
 			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"IP_INVENTORY_ASSERT_ENABLED": "OFF"
+				"CMAKE_BUILD_TYPE": "Release"
 			}
 		},
 

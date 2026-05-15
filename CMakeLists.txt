@@ -31,7 +31,6 @@ else()
     set(IP_INVENTORY_DEBUG ON)
 endif()
 
-option(IP_INVENTORY_ASSERT_ENABLED "Asserts enabled." OFF)
 option(IP_INVENTORY_BUILD_TESTS "Build tests." OFF)
 option(IP_INVENTORY_CONFIGURED_FROM_PRESET "Configured from preset." OFF)
 set(IP_INVENTORY_SQLITE3_DB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/db" CACHE PATH "Directory for the SQLite database.")
@@ -51,12 +50,11 @@ log_info("Compiler Version:          ${CMAKE_CXX_COMPILER_VERSION}")
 log_info("Configured from preset:    ${IP_INVENTORY_CONFIGURED_FROM_PRESET}")
 log_info("Debug:                     ${IP_INVENTORY_DEBUG}")
 log_info("Build Tests:               ${IP_INVENTORY_BUILD_TESTS}")
-log_info("Assert Enabled:            ${IP_INVENTORY_ASSERT_ENABLED}")
 log_info("SQLite3 DB Root:           ${IP_INVENTORY_SQLITE3_DB_ROOT}")
 if(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS)
     log_info("Reservation Expiration:    ${IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS}s")
 else()
-    log_info("Reservation Expiration:    unset")
+    log_info("Reservation Expiration:    default")
 endif()
 
 # ---------------------------------------- End Options -----------------------------------------------------------------
@@ -151,45 +149,45 @@ endif()
 
 if (IP_INVENTORY_BUILD_TESTS)
 
-enable_testing()
+    enable_testing()
 
-add_library(unity STATIC tests/unity/unity.c)
-target_include_directories(unity PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unity
-)
-set_property(TARGET unity PROPERTY SYSTEM ON)
-
-function(add_unity_test test_name test_source)
-    add_executable(${test_name} ${test_source})
-
-    target_include_directories(${test_name} PRIVATE
+    add_library(unity STATIC tests/unity/unity.c)
+    target_include_directories(unity PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unity
     )
-    target_compile_definitions(${test_name} PRIVATE
-        IP_INVENTORY_TEST_DATA_ROOT="${CMAKE_BINARY_DIR}/test_data"
+    set_property(TARGET unity PROPERTY SYSTEM ON)
+
+    function(add_unity_test test_name test_source)
+        add_executable(${test_name} ${test_source})
+
+        target_include_directories(${test_name} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+        )
+        target_compile_definitions(${test_name} PRIVATE
+            IP_INVENTORY_TEST_DATA_ROOT="${CMAKE_BINARY_DIR}/test_data"
+        )
+
+        target_link_libraries(${test_name} PRIVATE unity ${ARGN})
+        target_set_default_c_flags(${test_name} ${IP_INVENTORY_DEBUG})
+
+        add_test(NAME ${test_name} COMMAND ${test_name})
+
+        if(OS STREQUAL "windows")
+            # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
+            target_link_libraries(${test_name} PRIVATE ws2_32)
+        endif()
+
+    endfunction()
+
+    add_unity_test(ip_inventory_test_validation "${ip_inventory_test_validation_src}")
+    add_unity_test(ip_inventory_test_ip_utils "${ip_inventory_test_ip_utils_src}")
+    add_unity_test(ip_inventory_test_sqlite_repository "${ip_inventory_test_sqlite_repository_src}" sqlite3)
+
+    target_compile_definitions(ip_inventory_test_sqlite_repository PRIVATE
+        IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+        IP_INVENTORY_SQLITE3_DB_ROOT="${CMAKE_BINARY_DIR}/test_data"
     )
-
-    target_link_libraries(${test_name} PRIVATE unity ${ARGN})
-    target_set_default_c_flags(${test_name} ${IP_INVENTORY_DEBUG})
-
-    add_test(NAME ${test_name} COMMAND ${test_name})
-
-    if(OS STREQUAL "windows")
-        # inet_pton is provided by Winsock on Windows, so targets using ip_utils.cpp must link ws2_32.
-        target_link_libraries(${test_name} PRIVATE ws2_32)
-    endif()
-
-endfunction()
-
-add_unity_test(ip_inventory_test_validation "${ip_inventory_test_validation_src}")
-add_unity_test(ip_inventory_test_ip_utils "${ip_inventory_test_ip_utils_src}")
-add_unity_test(ip_inventory_test_sqlite_repository "${ip_inventory_test_sqlite_repository_src}" sqlite3)
-
-target_compile_definitions(ip_inventory_test_sqlite_repository PRIVATE
-    IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-    IP_INVENTORY_SQLITE3_DB_ROOT="${CMAKE_BINARY_DIR}/test_data"
-)
 
 endif()
 

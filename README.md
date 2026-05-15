@@ -27,11 +27,11 @@ cmake --preset msvc-release
 Build:
 
 ```sh
-cmake --build build
+cmake --build build --parallel
 
 # For Windows MSVC it's required to pass the config option:
-cmake --build build --config Debug
-cmake --build build --config Release
+cmake --build build --config Debug --parallel
+cmake --build build --config Release --parallel
 ```
 
 ## Tests

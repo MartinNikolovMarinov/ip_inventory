@@ -5,9 +5,7 @@
 
 using namespace ip_inv;
 
-void setUp() {}
-
-void tearDown() {}
+namespace {
 
 void validatesPorts() {
     struct TestCase {
@@ -107,6 +105,8 @@ void validatesIpAddressLists() {
     TEST_ASSERT_FALSE(isValidIpAddressList({}));
     TEST_ASSERT_FALSE(isValidIpAddressList({ipv4, invalid}));
 }
+
+} // namespace
 
 int main() {
     UNITY_BEGIN();
