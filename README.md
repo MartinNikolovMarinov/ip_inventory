@@ -12,10 +12,15 @@
     - [Build](#build)
     - [Tests](#tests)
     - [Run](#run)
+- [Folder Structure](#folder-structure)
 - [Architecture](#architecture)
+    - [Design Diagram](#design-diagram)
+    - [Database schema](#database-schema)
+- [Continues Integration](#continues-integration)
 
 ## Overview
 
+TODO: write a project overview
 
 ## Building and running the Project
 
@@ -88,7 +93,21 @@ Swagger UI is available at:
 http://localhost:8080/docs/
 ```
 
+## Folder Structure
+
+TODO: explain briefly the folder structure and the contents of the project
+
 ## Architecture
 
-Design Diagram:
+TODO: explain the basic classes and system components as well as the used dependencies (maybe that first).
+
+### Design Diagram
 ![Design Diagram](./docs/Ip_invetory_design_diagram.png)
+
+### Database schema
+
+TODO:
+
+## Continues Integration
+
+TODO: Explain the github actions.
