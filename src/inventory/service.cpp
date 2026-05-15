@@ -93,6 +93,10 @@ InventoryStatus IpInventoryService::changeServiceId(const std::string& servideId
     return m_repository->changeServiceId(servideIdOld, serviceIdNew);
 }
 
+IpAddressesResult IpInventoryService::getAvailableIps() {
+    return m_repository->getAvailableIps();
+}
+
 ServiceIpsResult IpInventoryService::getAssignedIpsForService(const std::string& servideId) {
     ServiceIpsResult ret;
 

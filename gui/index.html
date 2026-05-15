@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IP Inventory UI</title>
+  <link rel="stylesheet" href="/gui/style.css" />
+</head>
+<body>
+  <header>
+    <h1>IP Inventory</h1>
+    <div class="toolbar">
+      <label>
+        API base
+        <input id="apiBase" value="" placeholder="same origin or http://127.0.0.1:8080" />
+      </label>
+      <button id="saveApiBase">Save</button>
+      <button id="refresh">Refresh</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="controls">
+      <form id="addPoolForm" class="card">
+        <h2>Add IPs to pool</h2>
+        <label>IP addresses, one per line</label>
+        <textarea id="poolIps" rows="5" placeholder="95.44.73.19&#10;2a01:5a9:1a4:95c::1"></textarea>
+        <label>IP type</label>
+        <select id="poolIpType">
+          <option>Auto</option>
+          <option>IPv4</option>
+          <option>IPv6</option>
+        </select>
+        <button type="submit">Add IPs</button>
+      </form>
+
+      <form id="reserveForm" class="card">
+        <h2>Reserve IPs for service</h2>
+        <label>Service ID</label>
+        <input id="reserveServiceId" placeholder="service-a" />
+        <label>IP type</label>
+        <select id="reserveIpType">
+          <option>IPv4</option>
+          <option>IPv6</option>
+          <option selected>Both</option>
+        </select>
+        <button type="submit">Reserve</button>
+      </form>
+
+      <form id="assignForm" class="card">
+        <h2>Assign reserved IPs</h2>
+        <label>Service ID</label>
+        <input id="assignServiceId" placeholder="service-a" />
+        <label>IP addresses, one per line</label>
+        <textarea id="assignIps" rows="4" placeholder="95.44.73.19"></textarea>
+        <button type="submit">Assign</button>
+      </form>
+
+      <form id="terminateForm" class="card">
+        <h2>Terminate assigned IPs</h2>
+        <label>Service ID</label>
+        <input id="terminateServiceId" placeholder="service-a" />
+        <label>IP addresses, one per line</label>
+        <textarea id="terminateIps" rows="4" placeholder="95.44.73.19"></textarea>
+        <button type="submit">Terminate</button>
+      </form>
+
+      <form id="renameForm" class="card">
+        <h2>Rename service</h2>
+        <label>Old service ID</label>
+        <input id="serviceIdOld" placeholder="service-a" />
+        <label>New service ID</label>
+        <input id="serviceIdNew" placeholder="service-b" />
+        <button type="submit">Rename</button>
+      </form>
+    </section>
+
+    <section class="visuals">
+      <div class="card">
+        <h2>Last Response</h2>
+        <pre id="lastResponse">No response yet.</pre>
+      </div>
+
+      <div class="card">
+        <h2>Available IPs</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>IP</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="availableRows"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Reserved IPs</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>IP</th>
+              <th>Type</th>
+              <th>Expiration</th>
+            </tr>
+          </thead>
+          <tbody id="reservedRows"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Assigned IPs</h2>
+        <p class="hint">Assigned state is queried only for service IDs used in this UI session or saved in local storage.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>IP</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="assignedRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/gui/app.js"></script>
+</body>
+</html>

@@ -11,6 +11,7 @@ void reserveIpHandler(IpInventoryService& inventoryService, const httplib::Reque
 void assignIpServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 void terminateIpServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 void serviceIdChangeHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
+void getAvailableIpsHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 void getServiceIdHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 void getReservedIpsHandler(IpInventoryService& inventoryService, const httplib::Request& req, httplib::Response& res);
 

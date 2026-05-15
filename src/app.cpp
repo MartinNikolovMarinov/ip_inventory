@@ -197,10 +197,16 @@ void configureHttpRoutes(App::Impl& app) {
     constexpr const char* IP_TERMINATE_SERVICE_ID_ENDPOINT = "/ip-inventory/terminate-ip-serviceId";
     constexpr const char* SERVICE_ID_CHANGE_ENDPOINT = "/ip-inventory/serviceId-change";
     constexpr const char* SERVICE_ID_ENDPOINT = "/ip-inventory/serviceId";
+    constexpr const char* AVAILABLE_IPS_ENDPOINT = "/ip-inventory/available-ips";
     constexpr const char* ALL_RESERVED_IPS_ENDPOINT = "/ip-inventory/all-reserved-ips";
     constexpr const char* DOCS_NO_TRAILING_SLASH_ENDPOINT = "/docs";
     constexpr const char* DOCS_ENDPOINT = "/docs/";
     constexpr const char* OPENAPI_YAML_ENDPOINT = "/openapi.yaml";
+    constexpr const char* GUI_NO_TRAILING_SLASH_ENDPOINT = "/gui";
+    constexpr const char* GUI_ENDPOINT = "/gui/";
+    constexpr const char* GUI_INDEX_HTML_ENDPOINT = "/gui/index.html";
+    constexpr const char* GUI_STYLE_CSS_ENDPOINT = "/gui/style.css";
+    constexpr const char* GUI_APP_JS_ENDPOINT = "/gui/app.js";
 
     app.server.Get(HEALTH_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(HEALTH_ENDPOINT, req, res, [&] {
@@ -239,6 +245,11 @@ void configureHttpRoutes(App::Impl& app) {
             getServiceIdHandler(*app.inventoryService, req, res);
         });
     });
+    app.server.Get(AVAILABLE_IPS_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(AVAILABLE_IPS_ENDPOINT, req, res, [&] {
+            getAvailableIpsHandler(*app.inventoryService, req, res);
+        });
+    });
     app.server.Get(ALL_RESERVED_IPS_ENDPOINT, [&app](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(ALL_RESERVED_IPS_ENDPOINT, req, res, [&] {
             getReservedIpsHandler(*app.inventoryService, req, res);
@@ -248,6 +259,10 @@ void configureHttpRoutes(App::Impl& app) {
     app.server.set_mount_point(
         "/swagger-ui-assets",
         IP_INVENTORY_SOURCE_DIR "/api/swagger-ui"
+    );
+    app.server.set_mount_point(
+        GUI_NO_TRAILING_SLASH_ENDPOINT,
+        IP_INVENTORY_SOURCE_DIR "/gui"
     );
     app.server.Get(DOCS_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(DOCS_ENDPOINT, req, res, [&] {
@@ -262,6 +277,31 @@ void configureHttpRoutes(App::Impl& app) {
     app.server.Get(OPENAPI_YAML_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
         endpointGuard(OPENAPI_YAML_ENDPOINT, req, res, [&] {
             serveFileHandler(IP_INVENTORY_SOURCE_DIR "/api/openapi.yaml", "application/yaml", res);
+        });
+    });
+    app.server.Get(GUI_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(GUI_ENDPOINT, req, res, [&] {
+            serveFileHandler(IP_INVENTORY_SOURCE_DIR "/gui/index.html", "text/html", res);
+        });
+    });
+    app.server.Get(GUI_NO_TRAILING_SLASH_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(GUI_NO_TRAILING_SLASH_ENDPOINT, req, res, [&] {
+            serveFileHandler(IP_INVENTORY_SOURCE_DIR "/gui/index.html", "text/html", res);
+        });
+    });
+    app.server.Get(GUI_INDEX_HTML_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(GUI_INDEX_HTML_ENDPOINT, req, res, [&] {
+            serveFileHandler(IP_INVENTORY_SOURCE_DIR "/gui/index.html", "text/html", res);
+        });
+    });
+    app.server.Get(GUI_STYLE_CSS_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(GUI_STYLE_CSS_ENDPOINT, req, res, [&] {
+            serveFileHandler(IP_INVENTORY_SOURCE_DIR "/gui/style.css", "text/css", res);
+        });
+    });
+    app.server.Get(GUI_APP_JS_ENDPOINT, [](const httplib::Request& req, httplib::Response& res) {
+        endpointGuard(GUI_APP_JS_ENDPOINT, req, res, [&] {
+            serveFileHandler(IP_INVENTORY_SOURCE_DIR "/gui/app.js", "application/javascript", res);
         });
     });
 }

@@ -31,6 +31,7 @@ public:
         const std::string& servideIdOld,
         const std::string& serviceIdNew
     ) = 0;
+    [[nodiscard]] virtual IpAddressesResult getAvailableIps() = 0;
     [[nodiscard]] virtual ServiceIpsResult getAssignedIpsForService(const std::string& servideId) = 0;
     [[nodiscard]] virtual ReservedIpsResult getReservedIps() = 0;
 

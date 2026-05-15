@@ -41,6 +41,8 @@ public:
         const std::string& serviceIdNew
     ) override;
 
+    [[nodiscard]] IpAddressesResult getAvailableIps() override;
+
     [[nodiscard]] virtual ServiceIpsResult getAssignedIpsForService(const std::string& servideId) override;
 
     [[nodiscard]] ReservedIpsResult getReservedIps() override;

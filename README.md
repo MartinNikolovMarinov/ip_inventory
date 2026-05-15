@@ -18,6 +18,7 @@
     - [Design Diagram](#design-diagram)
     - [Database schema](#database-schema)
 - [Continues Integration](#continues-integration)
+- [GUI](#gui)
 
 ## Overview
 
@@ -241,3 +242,10 @@ The project uses GitHub Actions to run the same CMake configure, build, and test
 There are separate workflows for Ubuntu, macOS, and Windows, plus a combined build matrix. Together they exercise the project across the main supported platform and compiler combinations: Linux with GCC and Clang, macOS with Clang, and Windows with MSVC. The workflows build both Debug and Release presets and run the test suite after each build.
 
 This gives coverage across the main operating systems, compiler toolchains, and runner architectures used by the project, including x86 and ARM64 environments where they are available from GitHub-hosted runners.
+
+## GUI
+
+There is a basic single page pure js/css/html GUI application designed to test the Ip Inventory REST service quickly.
+
+Open `http://localhost:8080/gui` in the browser after starting the server, here is a screenshot:
+![GUI screenshot](./docs/gui.png)

@@ -99,6 +99,15 @@ struct ServiceIpsResult {
     }
 };
 
+struct IpAddressesResult {
+    InventoryStatus status;
+    std::vector<IpAddress> ipAddresses;
+
+    [[nodiscard]] bool success() const noexcept {
+        return status.success();
+    }
+};
+
 struct ReservedIpInfo {
     std::string serviceId;
     IpAddress address;

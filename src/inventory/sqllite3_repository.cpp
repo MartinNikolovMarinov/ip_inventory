@@ -411,6 +411,43 @@ InventoryStatus IpInventoryRepositorySqlLite::changeServiceId(
     return InventoryStatus::OkStatus();
 }
 
+IpAddressesResult IpInventoryRepositorySqlLite::getAvailableIps() {
+    IpAddressesResult ret;
+
+    std::lock_guard lock(m_dbMutex);
+
+    if (m_db == nullptr) {
+        ret.status.error = InventoryError::DbNotInitialized;
+        ret.status.detail = "Failed to get available IP addresses; reason: database is not initialized";
+        return ret;
+    }
+
+    SqliteStatement selectAvailableIpsStm(
+        m_db,
+        R"sql(
+            SELECT ip_bytes, ip_type, display_ip
+            FROM ip_pool
+            WHERE assigned_id IS NULL
+                AND reserved_id IS NULL
+            ORDER BY ip_type, ip_bytes
+        )sql"
+    );
+
+    while (selectAvailableIpsStm.stepRow()) {
+        const void* blob = selectAvailableIpsStm.columnBlob(0);
+        int blobSize = selectAvailableIpsStm.columnBytes(0);
+
+        IpAddress address {};
+        std::memcpy(address.bytes, blob, blobSize);
+        address.type = IpType(selectAvailableIpsStm.columnInt(1));
+        address.str = selectAvailableIpsStm.columnText(2);
+
+        ret.ipAddresses.push_back(std::move(address));
+    }
+
+    return ret;
+}
+
 ServiceIpsResult IpInventoryRepositorySqlLite::getAssignedIpsForService(const std::string& serviceId) {
     ServiceIpsResult ret;
 

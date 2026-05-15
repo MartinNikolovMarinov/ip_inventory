@@ -194,6 +194,17 @@ void getServiceIdHandler(IpInventoryService& inventoryService, const httplib::Re
     setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
 }
 
+void getAvailableIpsHandler(IpInventoryService& inventoryService, const httplib::Request&, httplib::Response& res) {
+    auto result = inventoryService.getAvailableIps();
+    if (!result.success()) {
+        setJsonResponse(res, HttpStatusCode::BadRequest, toJson(statusResponse("1", result.status.detail)));
+        return;
+    }
+
+    IpAddressesDto responseDto = makeIpAddressesDto(result.ipAddresses);
+    setJsonResponse(res, HttpStatusCode::Ok, toJson(responseDto));
+}
+
 void getReservedIpsHandler(IpInventoryService& inventoryService, const httplib::Request&, httplib::Response& res) {
     auto result = inventoryService.getReservedIps();
     if (!result.success()) {

@@ -55,6 +55,7 @@ enum struct HttpMethod : u8 {
 
 enum struct HttpStatusCode : u32 {
     Ok = 200,
+    MovedPermanently = 301,
     BadRequest = 400,
     NotFound = 404,
     InternalServerError = 500

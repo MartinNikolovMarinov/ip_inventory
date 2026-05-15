@@ -356,6 +356,40 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /ip-inventory/available-ips:
+    get:
+      summary: List available IP addresses
+      operationId: getAvailableIps
+      description: Returns every IP address in the pool that is not assigned and not reserved.
+      responses:
+        "200":
+          description: Available IP addresses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IpAddressesResponse"
+              examples:
+                availableIps:
+                  value:
+                    ipAddresses:
+                      - ip: 95.44.73.19
+                        ipType: IPv4
+                      - ip: 2a01:5a9:1a4:95c::1
+                        ipType: IPv6
+        "400":
+          description: The repository could not read available IP addresses.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+              examples:
+                dbNotInitialized:
+                  value:
+                    statusCode: "1"
+                    statusMessage: "Failed to get available IP addresses; reason: database is not initialized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /ip-inventory/all-reserved-ips:
     get:
       summary: List all reserved IP addresses

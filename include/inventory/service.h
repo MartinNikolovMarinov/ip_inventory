@@ -23,6 +23,7 @@ public:
         std::vector<IpAddress>&& addresses
     );
     [[nodiscard]] InventoryStatus changeServiceId(const std::string& servideIdOld, const std::string& serviceIdNew);
+    [[nodiscard]] IpAddressesResult getAvailableIps();
     [[nodiscard]] ServiceIpsResult getAssignedIpsForService(const std::string& servideId);
     [[nodiscard]] ReservedIpsResult getReservedIps();
 
