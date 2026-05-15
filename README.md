@@ -8,7 +8,7 @@
 ## Table of content
 
 - [Overview](#overview)
-- [Platforms](#platofrms)
+- [Platforms](#platforms)
 - [Building and running the Project](#building-and-running-the-project)
     - [Build](#build)
     - [Tests](#tests)
@@ -108,13 +108,120 @@ Swagger UI is available at:
 http://localhost:8080/docs/
 ```
 
+**IMPORTANT:** The swagger endpoint is fully functional. Every listed api endpoint can be "executed" and tested. [Swagger Example Link](docs/swagger_example.md)
+
 ## Folder Structure
 
-TODO: explain briefly the folder structure and the contents of the project
+```bash
+├── CMakePresets.json # The available presets that have been tested.
+├── CMakeLists.txt # The top-level cmake build configuration.
+├──.github
+│   ├── scripts # CMake scripts that run on CI/CD machines
+│   └── workflows # CMake yml configurations that defined CI/CD Github Actions
+├── api
+│   ├── openapi.html # The index html that is served by the server on the /docs endpoint.
+│   ├── openapi.yaml # The api definitions.
+│   └── swagger-ui # The static javascript that creates the ui for Swagger.
+├── build # The expected git ignored place for the build binaries.
+├── cmake # Helper scripts used by the CMakeLists.txt for common CMake functionality.
+├── db
+│   └── ip_inventory.sqlite3 # This directory is used to store database objects locally.
+├── include
+│   ├── app.h
+│   ├── compiler.h
+│   ├── dtos.h
+│   ├── handlers.h
+│   ├── inventory # All source code related to the ip inventory service.
+│   │   ├── inventory_types.h
+│   │   ├── repository.h
+│   │   ├── service.h
+│   │   └── sqllite3_repository.h
+│   ├── ip_utils.h
+│   ├── profiling.h
+│   ├── sqlite # Basic RAII abstraction layer over the sqlite driver.
+│   │   └── sqlite.h
+│   ├── str_utils.h
+│   ├── types.h
+│   └── validation.h
+├── schema
+│   └── 001_init_db.sql # This directory has the schema definition of the database.
+├── scripts
+├── src # Source files.
+├── tests
+│   ├── e2e # basic shell scripts to run e2e scenarios quickly and check server responses.
+│   ├── ... # unit and integration tests.
+│   └── unity # A very simplistic test framework.
+└── vendor
+    ├── cpp-httplib # git submodule for the http server support.
+    ├── nlohmann # header only json parsing library.
+    └── sqlite # sqlite driver.
+```
 
 ## Architecture
 
-TODO: explain the basic classes and system components as well as the used dependencies (maybe that first).
+The main goal of the project is to stay maximally cross-platform while remaining simple to build, test, and evaluate. The repository vendors the small third-party dependencies it needs and uses CMake presets so the same workflow can be used on Linux, macOS, and Windows with different compilers.
+
+### Third party software usage reasons and research
+
+Two important design decisions are the embedded HTTP server and the database backend.
+
+For the HTTP server, several C++ options were evaluated:
+
+1. `Boost.Beast` is the strongest production-oriented option, but Boost is a large dependency and would usually need to be installed as a system dependency. That made it too heavy for this project.
+2. `Drogon` has similar concerns: it is production capable, but brings more dependency and build complexity than this project needs.
+3. `oat++` is a good alternative, but its current development has been affected by the war in Ukraine.
+4. `cpp-httplib` was selected because it is small, simple to vendor, easy to build, and enough for evaluating the service API.
+
+**`cpp-httplib` also has important limitations**. It does not support HTTP/2, and it does not use scalable **asynchronous I/O** mechanisms such as `epoll`, `kqueue`, or Windows I/O completion ports. Its server model is **thread-per-connection**, which can be simple and acceptable for a small service, but becomes expensive under many concurrent clients because each connection consumes a thread stack and scheduling resources. The lack of async I/O is the bigger production concern for performance-sensitive systems because the server cannot efficiently multiplex large numbers of idle or slow connections.
+
+For storage, full Relational Database Management Systems (`RDBMS`) such as PostgreSQL were considered, but they require system-level drivers such as `libpq`. SQLite was selected because it is easy to vendor, easy to initialize locally, relatively fast to build, and sufficient for this project. A production deployment should use a stronger relational database, so the application keeps persistence behind the `IpInventoryRepository` interface and the SQLite implementation can be replaced by another repository backend.
+
+**Resulting third-party vendored dependencies:**
+1. `vendor/cpp-httplib` - lite http server/client library.
+2. `vendor/sqlite` - lite and portable sql database.
+3. `vendor/nlohmann` - simple header only library for json parsing.
+4. `tests/unity` - very lite unit testing framework.
+5. `api/swagger-ui` - the distributed web application for displaying serving Swagger documentation.
+
+### System Components
+
+**App**
+
+The `App` component owns the application lifecycle. It validates configuration, configures the HTTP routes, initializes repositories and services, starts the server, runs the reservation cleanup thread, and coordinates shutdown.
+
+**Handlers**
+
+The handlers layer is the entry point for request-specific logic. Handlers receive the raw HTTP request/response objects, parse JSON into DTOs, validate the request shape, convert API objects into domain objects, and then call the IP inventory service. They also translate service results back into JSON responses.
+
+**IP Utils**
+
+The `ip_utils` module is a critical part of the domain model. It uses `inet_pton` to parse and validate incoming IP addresses into binary form. This avoids treating equivalent textual forms as different addresses, for example `2001:db8::1` and `2001:0db8:0:0:0:0:0:1`. If IP identity were based only on strings, the same address could be assigned to different services, which would be a serious correctness bug.
+
+For that reason the project models IP addresses like this:
+
+```c++
+struct IpAddress {
+    std::string str;
+    u8 bytes[16] {};
+    IpType type = IpType::IPv4;
+};
+```
+
+The identity of an IP address is defined by `type` and `bytes`; `str` is only the display representation. This is the most important design decision in the project because all reservation and assignment correctness depends on canonical IP identity.
+
+**Services**
+
+The service layer applies business-level validation and coordinates inventory operations. It does not know about SQLite directly; it depends on the abstract `IpInventoryRepository` interface, which keeps the business logic separate from the storage implementation.
+
+**Repositories**
+
+The repository implementation performs the database CRUD operations and keeps related changes inside transactions. This is important for operations such as reserving or assigning multiple addresses, where the database should not be left in a partially updated state.
+
+**Database**
+
+The database schema has the expected `services` and `ip_pool` tables, plus a separate `reserved_ips` table. Reservations are separated so expiration cleanup can scan and delete the **smallest set of rows** instead of repeatedly inspecting the whole IP pool. Since garbage collection runs periodically, this keeps cleanup simple and efficient.
+
+If reservation traffic becomes heavier, an in-memory cache for reserved IPs could be added in the service layer without changing the repository contract.
 
 ### Design Diagram
 ![Design Diagram](./docs/Ip_invetory_design_diagram.png)
