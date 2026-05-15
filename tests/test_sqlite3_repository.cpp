@@ -128,11 +128,11 @@ void reserveIpReturnsExistingReservationForService() {
 
 } // namespace
 
-void setUp() {
+void setUp(void) {
     prepareRepositoryTestDatabase();
 }
 
-void tearDown() {}
+void tearDown(void) {}
 
 i32 main() {
     std::filesystem::create_directories(test::testDatabaseRoot());

@@ -82,8 +82,8 @@ To run the tests:
 ctest --test-dir build --output-on-failure
 
 # For Windows MSVC it's required to pass the config option:
-ctest --test-dir build -C Debug
-ctest --test-dir build -C Release
+ctest --test-dir build --output-on-failure -C Debug
+ctest --test-dir build --output-on-failure -C Release
 ```
 
 ### Run

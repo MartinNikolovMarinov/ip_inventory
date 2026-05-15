@@ -4,9 +4,9 @@
 
 using namespace ip_inv;
 
-void setUp() {}
+void setUp(void) {}
 
-void tearDown() {}
+void tearDown(void) {}
 
 static void parses_ipv4_addresses() {
     struct TestCase {
