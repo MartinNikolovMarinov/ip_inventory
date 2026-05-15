@@ -8,7 +8,7 @@
 namespace ip_inv {
 
 enum struct IpType {
-    Undefined,
+    Undefined = 0,
     IPv4 = 4,
     IPv6 = 6
 };

@@ -79,6 +79,21 @@ curl -i -X POST http://127.0.0.1:8080/ip-inventory/assign-ip-serviceId \
 
 echo
 echo
+echo "Assign a service to an ip that hasa a port defined"
+echo
+curl -i -X POST http://127.0.0.1:8080/ip-inventory/assign-ip-serviceId \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serviceId": "service-a",
+    "ipAddresses": [
+      {
+        "ip": "1.1.1.1:80"
+      },
+    ]
+  }'
+
+echo
+echo
 echo "Assign a service that does not exist"
 echo
 curl -i -X POST http://127.0.0.1:8080/ip-inventory/assign-ip-serviceId \

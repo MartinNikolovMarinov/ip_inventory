@@ -8,14 +8,12 @@
 
 using namespace ip_inv;
 
+// TODO: Cover all edge cases for the sqlite repository class
+
 namespace {
 
 std::string g_databaseName;
 std::filesystem::path g_databasePath;
-
-} // namespace
-
-// TODO: Extend the testing to cover more edge cases
 
 void setUp() {
     test::prepareDatabaseForTest(g_databaseName);
@@ -23,7 +21,7 @@ void setUp() {
 
 void tearDown() {}
 
-static void addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows() {
+void addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows() {
     IpInventoryRepositorySqlLite repository(g_databaseName);
     repository.initializeDb(false);
 
@@ -75,6 +73,8 @@ static void addIpAddressesHandlesIpv4Ipv6DuplicatesAndMixedExistingRows() {
         {6, IPV6_B_STR},
     });
 }
+
+} // namespace
 
 i32 main() {
     std::filesystem::create_directories(test::testDatabaseRoot());

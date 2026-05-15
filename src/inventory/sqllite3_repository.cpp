@@ -1,7 +1,7 @@
 #include "inventory/sqllite3_repository.h"
 #include "inventory/inventory_types.h"
-#include "sqlite/sqlite.h"
 
+#include "sqlite/sqlite.h"
 #include <sqlite3.h>
 
 #include <chrono>
