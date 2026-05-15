@@ -1,0 +1,14 @@
+services:
+  ip-inventory:
+    build:
+      context: .. # The directory Docker sends as the available file set for the build image. The root project folder in this case.
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ip-inventory-db:/db
+      - ../api:/api:ro
+      - ../gui:/gui:ro
+
+volumes:
+  ip-inventory-db:

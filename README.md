@@ -13,6 +13,7 @@
     - [Build](#build)
     - [Tests](#tests)
     - [Run](#run)
+    - [Docker](#docker)
 - [Folder Structure](#folder-structure)
 - [Architecture](#architecture)
     - [Design Diagram](#design-diagram)
@@ -110,6 +111,22 @@ http://localhost:8080/docs/
 ```
 
 **IMPORTANT:** The swagger endpoint is fully functional. Every listed api endpoint can be "executed" and tested.
+
+### Docker
+
+If you do not want to install CMake or run any CMake commands locally, the easiest way to start the service is with Docker:
+
+```sh
+docker compose -f docker/docker-compose.yml up --build
+```
+
+This builds the application image and starts the server on:
+
+```text
+http://localhost:8080
+```
+
+The Docker configuration keeps the SQLite database persistent in a Docker volume mounted at `/db`, matching the normal application database location. It also mounts the local `api` and `gui` folders into the container at `/api` and `/gui`, because the server uses those paths to serve the Swagger UI and web GUI static files.
 
 ## Folder Structure
 

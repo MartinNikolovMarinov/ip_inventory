@@ -24,7 +24,7 @@ i32 main() {
     const u32 concurrency = std::thread::hardware_concurrency() / 2;
 
     AppConfig cfg;
-    cfg.ipAddress = "localhost";
+    cfg.ipAddress = IP_INVENTORY_LISTEN_ADDRESS;
     cfg.databaseName = "ip_inventory.sqlite3";
     cfg.schemaInitScriptPath = IP_INVENTORY_SOURCE_DIR "/schema/001_init_db.sql";
     cfg.dropCreateDbOnStart = !std::filesystem::exists(

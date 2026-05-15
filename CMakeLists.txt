@@ -34,6 +34,8 @@ endif()
 option(IP_INVENTORY_BUILD_TESTS "Build tests." OFF)
 option(IP_INVENTORY_CONFIGURED_FROM_PRESET "Configured from preset." OFF)
 set(IP_INVENTORY_SQLITE3_DB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/db" CACHE PATH "Directory for the SQLite database.")
+set(IP_INVENTORY_SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "Directory containing schema, api, and gui assets.")
+set(IP_INVENTORY_LISTEN_ADDRESS "localhost" CACHE STRING "Address the HTTP server listens on.")
 set(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS "" CACHE STRING "Reservation expiration in seconds. Leave empty to use the application default.")
 
 if(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS AND NOT IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS MATCHES "^[1-9][0-9]*$")
@@ -51,6 +53,8 @@ log_info("Configured from preset:    ${IP_INVENTORY_CONFIGURED_FROM_PRESET}")
 log_info("Debug:                     ${IP_INVENTORY_DEBUG}")
 log_info("Build Tests:               ${IP_INVENTORY_BUILD_TESTS}")
 log_info("SQLite3 DB Root:           ${IP_INVENTORY_SQLITE3_DB_ROOT}")
+log_info("Source Root:               ${IP_INVENTORY_SOURCE_ROOT}")
+log_info("Listen Address:            ${IP_INVENTORY_LISTEN_ADDRESS}")
 if(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS)
     log_info("Reservation Expiration:    ${IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS}s")
 else()
@@ -120,8 +124,9 @@ target_include_directories(ip_inventory PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_compile_definitions(ip_inventory PRIVATE
-    IP_INVENTORY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}" # TODO: The ip inventory directory is used for service static files, it should instead use the binary directory and copy dist there!! Same for schema sql.
+    IP_INVENTORY_SOURCE_DIR="${IP_INVENTORY_SOURCE_ROOT}"
     IP_INVENTORY_SQLITE3_DB_ROOT="${IP_INVENTORY_SQLITE3_DB_ROOT}"
+    IP_INVENTORY_LISTEN_ADDRESS="${IP_INVENTORY_LISTEN_ADDRESS}"
 )
 
 if(IP_INVENTORY_RESERVATION_EXPIRATION_SECONDS)
