@@ -146,6 +146,7 @@ http://localhost:8080/docs/
 │   └── validation.h
 ├── schema
 │   └── 001_init_db.sql # This directory has the schema definition of the database.
+├── gui # basic js/css/html static application for testing the service.
 ├── scripts
 ├── src # Source files.
 ├── tests
